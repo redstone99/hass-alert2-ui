@@ -880,6 +880,14 @@
              await z.setField('done_message', '');
              await z.checkField('done_message', null);
 
+             // reminder_message
+             await z.setField('reminder_message', 'yay');
+             await z.checkRender('reminder_message', /result:"yay"/);
+             await z.setField('reminder_message', '{{"a"+"b"}}');
+             await z.checkRender('reminder_message', /result:"ab"/);
+             await z.setField('reminder_message', '');
+             await z.checkField('reminder_message', null);
+
              // notifier
              await z.setField('notifier', 'yay');
              await z.checkRender('notifier', /result \(len=1\):\["yay"\]/);
@@ -1337,6 +1345,7 @@
              z.checkDefault('manual_on', null);
              z.checkDefault('message', null);
              z.checkDefault('done_message', null);
+             z.checkDefault('reminder_message', null);
              z.checkDefault('notifier', /empty: "happy"/);
              z.checkDefault('summary_notifier', /empty: false/);
              z.checkDefault('title', null);
