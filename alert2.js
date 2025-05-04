@@ -2729,6 +2729,10 @@ let helpCommon = {
                           <div>Single float (>= 0.01)</div><div class="exval"><code>10</code></div>
                          <div>List of floats:</div><div class="exval"><code>[ 10, 15 ]</code></div>
                   </div>`,
+    supersede_debounce_secs: html`Seconds to wait after alert activity before notifying, to see if a superseding alert becomes active. Can be:
+                  <div class="extable">
+                          <div>Single float (>= 0)</div><div class="exval"><code>0.5</code></div>
+                  </div>`,
     throttle_fires_per_mins: html`Limit notifications of alert firings based on a list of two numbers [X, Y]. If the alert has fired and notified more than X times in the last Y minutes, then throttling turns on and no further notifications occur until the rate drops below the threshold. Can be:
                   <div class="extable">
                           <div>List of [int, float]</div><div class="exval"><code>[3, 5.2]</code></div>
@@ -2810,6 +2814,11 @@ let helpCommon = {
                   <div class="extable">
                        <div>String</div><div class="exval"><code>Temperature low</code><div class="bigor">or</div><code>"Temperature low"</code></div>
                        <div>Template</div><div class="exval"><code>Temperature is {{ states('sensor.temp') }}</code></div>
+                  </div>`,
+    reminder_message: html`Message to send to remind that a condition alert is still on. The default message is "on for [n] secs". Can be:
+                  <div class="extable">
+                       <div>String</div><div class="exval"><code>is still on</code></div>
+                       <div>Template</div><div class="exval"><code>is still on. Temperature is {{ states('sensor.temp') }}</code></div>
                   </div>`,
     display_msg: html`Text to display in Alert2 Overview UI card when alert is displayed there. HTML is accepted. Can be:
                   <div class="extable">
@@ -3018,6 +3027,11 @@ class Alert2EditDefaults extends LitElement {
                   @expand-click=${this.expandClick}
                  .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
                <div slot="help">${helpCommon.priority}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="supersede_debounce_secs" type=${FieldTypes.FLOAT}
+                 .defaultP=${this._topConfigs.rawYaml.defaults}
+                  @expand-click=${this.expandClick}
+                 .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
+               <div slot="help">${helpCommon.supersede_debounce_secs}</div></alert2-cfg-field>
 
             <h3>Top-level options</h3>
             <alert2-cfg-field .hass=${this.hass} name="skip_internal_errors" type=${FieldTypes.BOOL}
@@ -3194,7 +3208,8 @@ class Alert2Create extends LitElement {
                 if (['domain','name', 'friendly_name', 'condition', 'condition_on', 'condition_off', 'message',
                      'title', 'target',
                      'annotate_messages', 'early_start', 'generator_name', 'manual_on', 'manual_off',
-                     'done_message', 'display_msg', 'delay_on_secs', 'priority'].includes(fname)) {
+                     'done_message', 'reminder_message', 'supersede_debounce_secs', 'display_msg', 'delay_on_secs',
+                     'priority'].includes(fname)) {
                     val = yamlEscape(rawVal);
                 } else if (['trigger', 'trigger_on', 'trigger_off', 'data', 'throttle_fires_per_mins',
                             'reminder_frequency_mins',
@@ -3347,6 +3362,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.done_message}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="reminder_message" type=${FieldTypes.TEMPLATE}
+                 @expand-click=${this.expandClick} @change=${this._change}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.reminder_message}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="notifier" type=${FieldTypes.TEMPLATE}
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   templateType=${TemplateTypes.LIST} .genResult=${this._generatorResult}
@@ -3381,6 +3400,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.annotate_messages}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="supersede_debounce_secs" type=${FieldTypes.FLOAT}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.supersede_debounce_secs}</div></alert2-cfg-field>
 
             <alert2-cfg-field .hass=${this.hass} name="display_msg" type=${FieldTypes.TEMPLATE}
                  @expand-click=${this.expandClick} @change=${this._change}

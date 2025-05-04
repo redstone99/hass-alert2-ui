@@ -561,6 +561,7 @@
              z.checkField('summary_notifier', null);
              z.checkField('annotate_messages', null);
              z.checkField('reminder_frequency_mins', null);
+             z.checkField('supersede_debounce_secs', null);
              z.checkField('throttle_fires_per_mins', null);
              z.checkField('priority', null);
              z.checkField('skip_internal_errors', null);
@@ -634,6 +635,12 @@
              await z.setField('reminder_frequency_mins', '[3,4]');
              await z.checkRender('reminder_frequency_mins', /len=2\):\[3,4\]/);
 
+             // supersede_debounce_secs
+             await z.setField('supersede_debounce_secs', '3');
+             await z.checkRender('supersede_debounce_secs', /result:3/);
+             await z.setField('supersede_debounce_secs', '3,4');
+             await z.checkRender('supersede_debounce_secs', /expected float/);
+             
              // throttle_fires_per_mins
              await z.setField('throttle_fires_per_mins', '3');
              await z.checkRender('throttle_fires_per_mins', /not a valid value/);
@@ -666,6 +673,7 @@
              z.setField('summary_notifier', 'snfoo');
              z.setField('annotate_messages', 'yes');
              z.setField('reminder_frequency_mins', '77');
+             z.setField('supersede_debounce_secs', '78');
              z.setField('throttle_fires_per_mins', '[2,5]');
              z.setField('skip_internal_errors', 'no');
              z.setField('notifier_startup_grace_secs', '6.2');
@@ -678,6 +686,7 @@
                               summary_notifier: 'snfoo',
                               annotate_messages: 'yes',
                               reminder_frequency_mins: '77',
+                              supersede_debounce_secs: '78',
                               throttle_fires_per_mins: '[2,5]',
                               priority: 'medium',
                           },
@@ -697,6 +706,7 @@
                               notifier: '[nfoo,  nnfoo3]',
                               annotate_messages: 'yes',
                               reminder_frequency_mins: '77',
+                              supersede_debounce_secs: '78',
                               throttle_fires_per_mins: '[2,5]',
                               priority: 'medium',
                           },
@@ -713,6 +723,7 @@
              z.checkField('summary_notifier', null);
              z.checkField('annotate_messages', 'yes');
              z.checkField('reminder_frequency_mins', '77');
+             z.checkField('supersede_debounce_secs', '78');
              z.checkField('throttle_fires_per_mins', '[2,5]');
              z.checkField('priority', 'medium');
              
@@ -962,6 +973,14 @@
              await z.setField('reminder_frequency_mins', '');
              await z.checkField('reminder_frequency_mins', null);
 
+             // supersede_debounce_secs
+             await z.setField('supersede_debounce_secs', '3');
+             await z.checkRender('supersede_debounce_secs', /result:3/);
+             await z.setField('supersede_debounce_secs', '3,4');
+             await z.checkRender('supersede_debounce_secs', /expected float/);
+             await z.setField('supersede_debounce_secs', '');
+             await z.checkField('supersede_debounce_secs', null);
+             
              // priority
              await z.setField('priority', 'high');
              await z.checkRender('priority', /result:"high"/);
@@ -1318,6 +1337,7 @@
              z.checkDefault('annotate_messages', /empty: false/);
              z.checkDefault('reminder_frequency_mins', /empty: 3/);
              z.checkDefault('throttle_fires_per_mins', /empty: ""/);
+             z.checkDefault('supersede_debounce_secs', /empty: 0.5/);
              z.checkDefault('skip_internal_errors', /empty: false/);
              z.checkDefault('notifier_startup_grace_secs', /empty: 3/);
              z.checkDefault('defer_startup_notifications', /empty: \["foo"\]/);
@@ -1355,6 +1375,7 @@
              
              z.checkDefault('throttle_fires_per_mins', /empty: ""/);
              z.checkDefault('reminder_frequency_mins', /empty: 3/);
+             z.checkDefault('supersede_debounce_secs', /empty: 0.5/);
              z.checkDefault('annotate_messages', /empty: "yes"/);
              z.checkDefault('generator', null);
              z.checkDefault('generator_name', null);
