@@ -1113,7 +1113,7 @@
              await z.setField('name', '{{genElem}}');
              await z.checkRender('name', /result:""/);
              await z.setField('generator', 'f2');
-             await sleepMs(50); // extra sleep needed for some reason ;(
+             await sleepMs(100); // extra sleep needed for some reason ;(
              await z.checkRender('name', /result:"f2"/);
              await z.setField('generator', '');
              await z.checkRender('name', /result:""/);
@@ -1167,7 +1167,7 @@
              // Now reopen dialog of generator alert
              z.ao.remove();
              z = await initTest('alert2-create', {entInfo: { domain: 'alert2generator', name: 'g1' }});
-             await sleepMs(50); // extra sleep needed for some reason ;(
+             await sleepMs(100); // extra sleep needed for some reason ;(
              await z.checkField('domain', 'd1');
              await z.checkField('name', '{{genElem}}');
              await z.checkRender('name', 'result:"f3"');
