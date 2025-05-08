@@ -4,7 +4,7 @@ const css = LitElement.prototype.css;
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.11.2  (internal 66)';
+const VERSION = 'v1.11.3  (internal 68)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -336,33 +336,32 @@ function popupMoreinfo(hass, element, entityName) {
         entityId: entityName
     });
     return;
-
-    let stateObj = hass.states[entityName];
-    let friendlyName = stateObj.attributes.friendly_name;
-    let title = '';
-    if (friendlyName) {
-        title += `"${friendlyName}" (entity ${entityName})`;
-    } else {
-        title += entityName;
-    }
-    //let innerHtml = html`<more-info-alert2  dialogInitialFocus .entityId=${entityName} .hass=${this.hass} >
-    //                     </more-info-alert2>`;
-    let innerElem = document.createElement('more-info-alert2');
-    innerElem.stateObj = stateObj;
-    //innerElem.entityId = entityName;
-    innerElem.setAttribute('dialogInitialFocus', '');
-    innerElem.hass = hass;
-    jCreateDialog(element, title, innerElem);
-    if (0) {
-        jFireEvent(element, "show-dialog", {
-            dialogTag: "more-info-alert2-container",
-            dialogImport: () => new Promise((resolve)=> { resolve(); }),
-            dialogParams: {
-                entityName: entityName,
-            },
-            addHistory: true
-        });
-    }
+    // let stateObj = hass.states[entityName];
+    // let friendlyName = stateObj.attributes.friendly_name;
+    // let title = '';
+    // if (friendlyName) {
+    //     title += `"${friendlyName}" (entity ${entityName})`;
+    // } else {
+    //     title += entityName;
+    // }
+    // //let innerHtml = html`<more-info-alert2  dialogInitialFocus .entityId=${entityName} .hass=${this.hass} >
+    // //                     </more-info-alert2>`;
+    // let innerElem = document.createElement('more-info-alert2');
+    // innerElem.stateObj = stateObj;
+    // //innerElem.entityId = entityName;
+    // innerElem.setAttribute('dialogInitialFocus', '');
+    // innerElem.hass = hass;
+    // jCreateDialog(element, title, innerElem);
+    // if (0) {
+    //     jFireEvent(element, "show-dialog", {
+    //         dialogTag: "more-info-alert2-container",
+    //         dialogImport: () => new Promise((resolve)=> { resolve(); }),
+    //         dialogParams: {
+    //             entityName: entityName,
+    //         },
+    //         addHistory: true
+    //     });
+    // }
 }
 
 // A custom card that lists alerts that have fired recently
@@ -854,16 +853,18 @@ class Alert2Overview extends LitElement {
                     }
                 } // else is off, which means acked, or is idle which means is off.
             } else if (entityName.startsWith('alert2.')) {
-                let lastAckMs = 0;
-                if (ent.attributes['last_ack_time']) {
-                    lastAckMs = Date.parse(ent.attributes['last_ack_time']);
-                }
+                //let lastAckMs = 0;
+                isAcked = ent.attributes['is_acked'];
+                //console.log(entityName, ent.attributes['is_acked'], typeof(ent.attributes['is_acked']));
+                //if (ent.attributes['last_ack_time']) {
+                //    lastAckMs = Date.parse(ent.attributes['last_ack_time']);
+                //}
                 if ('last_on_time' in ent.attributes) {
                     // Is a condition alert
                     let lastOnMs = 0;
                     if (ent.attributes['last_on_time']) {
                         lastOnMs = Date.parse(ent.attributes['last_on_time']);
-                        isAcked = lastAckMs > lastOnMs;
+                        //isAcked = lastAckMs > lastOnMs;
                     }
                     if (ent.state == 'on') {
                         isOn = true;
@@ -879,7 +880,7 @@ class Alert2Overview extends LitElement {
                     // Edge triggered alert
                     if (ent.state) {
                         let lastFireMs = Date.parse(ent.state);
-                        isAcked = lastAckMs > lastFireMs;
+                        //isAcked = lastAckMs > lastFireMs;
                         testMs = lastFireMs;
                     } // else alert has never fired
                 }
@@ -1328,10 +1329,10 @@ class HaAlert2State extends LitElement {
         }
         const ent = this._stateObj;
         let msg;
-        let last_ack_time = null;
-        if (ent.attributes['last_ack_time']) {
-            last_ack_time = Date.parse(ent.attributes['last_ack_time']);
-        }
+        //let last_ack_time = null;
+        //if (ent.attributes['last_ack_time']) {
+        //    last_ack_time = Date.parse(ent.attributes['last_ack_time']);
+        //}
         let last_on_time = null;
         if (ent.attributes['last_on_time']) {
             last_on_time = Date.parse(ent.attributes['last_on_time']);
@@ -1360,7 +1361,8 @@ class HaAlert2State extends LitElement {
             }
         }
         let ackButton = ''
-        if (last_ack_time && last_ack_time > last_fired_time) {
+        const is_acked = ent.attributes['is_acked'];
+        if (is_acked) {
             ackButton = html`<ha-progress-button
                   .progress=${this._ackInProgress} class="unack"
                   @click=${this._junack}>Unack</ha-progress-button>

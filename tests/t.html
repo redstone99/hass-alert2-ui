@@ -141,6 +141,7 @@
                                     'last_off_time': getRecentIso(offAgoMs),
                                     'notification_control': NOTIFICATIONS_ENABLED,
                                     'last_ack_time': getRecentIso(ackAgoMs),
+                                    'is_acked': ackAgoMs < onAgoMs,
                                     'fires_since_last_notify': 0 },
                       entity_id: 'alert2.'+name };
          }
@@ -148,6 +149,7 @@
              return { state: getRecentIso(fireAgoMs),
                       attributes: { 'notification_control': NOTIFICATIONS_ENABLED,
                                     'last_ack_time': getRecentIso(ackAgoMs),
+                                    'is_acked': ackAgoMs < fireAgoMs,
                                     'fires_since_last_notify': 0 },
                       entity_id: 'alert2.'+name };
          }
@@ -360,7 +362,8 @@
              // And then unack should bring it back up
              newHass = cloneHass(newHass);
              newHass.states['alert2.foo7'] = createState('foo7', 1905, 1895, 10);
-             newHass.states['alert2.foo7'].attributes['last_ack_time'] = null;
+             //newHass.states['alert2.foo7'].attributes['last_ack_time'] = null;
+             newHass.states['alert2.foo7'].attributes['is_acked'] = false;
              ao.hass = newHass;
              await sleepMs(60);
              tEls = ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');

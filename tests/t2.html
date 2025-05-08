@@ -106,13 +106,14 @@
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
              if (0) {
-                 jassert(await startTest(doTestInternal));
+                 jassert(await startTest(doTestAck));
                  //jassert(await startTest(doTestSupersedeMgr));
                  return;
              }
              jassert(await startTest(doTestDefaults));
              jassert(await startTest(doTestRender));
              jassert(await startTest(doTestCreate));
+             jassert(await startTest(doTestAck));
              jassert(await startTest(doTest4));
              jassert(await startTest(doTest5));
              jassert(await startTest(doTest6));
@@ -187,6 +188,7 @@
                                        'last_off_time': getRecentIso(offAgoMs),
                                        'notification_control': NOTIFICATIONS_ENABLED,
                                        'last_ack_time': getRecentIso(ackAgoMs),
+                                       'is_acked': ackAgoMs < onAgoMs,
                                        'fires_since_last_notify': 0,
                                        'priority': opts.priority,
                                        domain: 'd',
@@ -624,7 +626,7 @@
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: { 'annotate_messages': 'off' } }});
              await z.setField('annotate_messages', '');
-             await sleepMs(150);
+             await sleepMs(200);
              await z.checkRender('annotate_messages', /^\s+$/);
 
              // reminder_frequency_mins
@@ -1170,6 +1172,7 @@
              await sleepMs(100); // extra sleep needed for some reason ;(
              await z.checkField('domain', 'd1');
              await z.checkField('name', '{{genElem}}');
+             await sleepMs(100); // extra sleep needed for some reason ;(
              await z.checkRender('name', 'result:"f3"');
              await z.checkField('delay_on_secs', null);
              
@@ -1963,6 +1966,18 @@
 
              z.ao.remove();
          }
+
+         async function doTestAck() {
+             let z = await initTest('alert2-overview');
+
+             await createExperiment(z, [ createState('n1', 2000, 7000, 20000),
+                                         createState('n2', 3000, 7000, 1000),
+                                         createState('n3', 7000, 5000, 1000),
+                                         createState('n4', 7200, 4000, 10000) ],
+                                    ['n1', 'n4', 'n2', 'n3'], nBelow=2);
+             z.ao.remove();
+         }
+         
         </script>
     </head>
     <body>
