@@ -4,7 +4,7 @@ const css = LitElement.prototype.css;
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.11.2  (internal 65)';
+const VERSION = 'v1.11.2  (internal 66)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2815,7 +2815,7 @@ let helpCommon = {
                        <div>String</div><div class="exval"><code>Temperature low</code><div class="bigor">or</div><code>"Temperature low"</code></div>
                        <div>Template</div><div class="exval"><code>Temperature is {{ states('sensor.temp') }}</code></div>
                   </div>`,
-    reminder_message: html`Message to send to remind that a condition alert is still on. The default message is "on for [n] secs". Can be:
+    reminder_message: html`Message to send to remind that a condition alert is still on. Variables availble are on_secs and on_time_str. Default message is "on for {{ on_time_str }}". Can be:
                   <div class="extable">
                        <div>String</div><div class="exval"><code>is still on</code></div>
                        <div>Template</div><div class="exval"><code>is still on. Temperature is {{ states('sensor.temp') }}</code></div>
