@@ -561,6 +561,7 @@
              //
              z.checkField('notifier', null);
              z.checkField('summary_notifier', null);
+             z.checkField('done_notifier', null);
              z.checkField('annotate_messages', null);
              z.checkField('reminder_frequency_mins', null);
              z.checkField('supersede_debounce_secs', null);
@@ -614,6 +615,14 @@
              await z.checkRender('summary_notifier', /len=2.*"sfoo","ss"/);
              await z.setField('summary_notifier', '');
              await z.checkRender('summary_notifier', /^\s+$/);
+
+             // done_notifier
+             await z.setField('done_notifier', 'sfoo');
+             await z.checkRender('done_notifier', /len=1.*"sfoo"/);
+             await z.setField('done_notifier', '["sfoo","ss"]');
+             await z.checkRender('done_notifier', /len=2.*"sfoo","ss"/);
+             await z.setField('done_notifier', '');
+             await z.checkRender('done_notifier', /^\s+$/);
 
              // annotate_messages
              await z.setField('annotate_messages', 'on');
@@ -673,6 +682,7 @@
              // Try setting all
              z.setField('notifier', '[nfoo,  nnfoo]');
              z.setField('summary_notifier', 'snfoo');
+             z.setField('done_notifier', 'dnfoo');
              z.setField('annotate_messages', 'yes');
              z.setField('reminder_frequency_mins', '77');
              z.setField('supersede_debounce_secs', '78');
@@ -686,6 +696,7 @@
                           {config:{ defaults: {
                               notifier: '[nfoo,  nnfoo]',
                               summary_notifier: 'snfoo',
+                              done_notifier: 'dnfoo',
                               annotate_messages: 'yes',
                               reminder_frequency_mins: '77',
                               supersede_debounce_secs: '78',
@@ -700,6 +711,7 @@
              // Update two and remove two
              z.setField('notifier', '[nfoo,  nnfoo3]');
              z.setField('summary_notifier', '');
+             z.setField('done_notifier', '');
              z.setField('notifier_startup_grace_secs', '6.3');
              z.setField('defer_startup_notifications', '');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
@@ -723,6 +735,7 @@
              await sleepMs(11);
              z.checkField('notifier', '[nfoo,  nnfoo3]');
              z.checkField('summary_notifier', null);
+             z.checkField('done_notifier', null);
              z.checkField('annotate_messages', 'yes');
              z.checkField('reminder_frequency_mins', '77');
              z.checkField('supersede_debounce_secs', '78');
@@ -922,6 +935,16 @@
              await z.checkRender('summary_notifier', /result \(len=2\):\["a","b"\]/);
              await z.setField('summary_notifier', '');
              await z.checkField('summary_notifier', null);
+
+             // done_notifier
+             await z.setField('done_notifier', 'yay');
+             await z.checkRender('done_notifier', /result \(len=1\):\["yay"\]/);
+             await z.setField('done_notifier', '{{"a"+"b"}}');
+             await z.checkRender('done_notifier', /result \(len=1\):\["ab"\]/);
+             await z.setField('done_notifier', '[a,b]');
+             await z.checkRender('done_notifier', /result \(len=2\):\["a","b"\]/);
+             await z.setField('done_notifier', '');
+             await z.checkField('done_notifier', null);
 
              // title
              await z.setField('title', 'yay');
@@ -1337,6 +1360,7 @@
              await sleepMs(100);
              z.checkDefault('notifier', /"persistent_notification"/);
              z.checkDefault('summary_notifier', /empty: false/);
+             z.checkDefault('done_notifier', /empty: true/);
              z.checkDefault('annotate_messages', /empty: false/);
              z.checkDefault('reminder_frequency_mins', /empty: 3/);
              z.checkDefault('throttle_fires_per_mins', /empty: ""/);
@@ -1371,6 +1395,7 @@
              z.checkDefault('reminder_message', null);
              z.checkDefault('notifier', /empty: "happy"/);
              z.checkDefault('summary_notifier', /empty: false/);
+             z.checkDefault('done_notifier', /empty: true/);
              z.checkDefault('title', null);
              z.checkDefault('display_msg', null);
              z.checkDefault('target', null);
