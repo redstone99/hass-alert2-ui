@@ -23,7 +23,9 @@ This repository contains two Lovelace cards to display and interact with [Alert2
 
     [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=redstone99&repository=hass-alert2-ui&category=plugin)
 
-    or visit the HACS pane and add `https://github.com/redstone99/hass-alert2-ui.git` as a custom repository of type "Dashboard" by following [these instructions](https://hacs.xyz/docs/faq/custom_repositories/).
+    or visit the HACS pane, type **Alert2 UI** in the search field, expand "New" or "Available for download" if necessary, and click on **Alert2 UI** to get to the details page.
+
+    If, for some reason, Alert2 UI does not show up as a HACS search result,  you can add Alert2 UI manually by adding  `https://github.com/redstone99/hass-alert2-ui.git` as a custom repository of type "Dashboard" by following [these instructions](https://hacs.xyz/docs/faq/custom_repositories/).
 
 1. The UI should now show the "Alert2 UI" doc page in HACS. Click the "Download" button (bottom right of screen) to download the UI module.
 

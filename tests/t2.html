@@ -106,8 +106,7 @@
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
              if (0) {
-                 jassert(await startTest(doTestAck));
-                 //jassert(await startTest(doTestSupersedeMgr));
+                 jassert(await startTest(doTestRender));
                  return;
              }
              jassert(await startTest(doTestDefaults));
@@ -428,7 +427,7 @@
                      jasserteq(currP[aname], val);
                  }
              }
-             async function checkRender(aname, aregex) {
+             async function checkRender(aname, aregex, hasErr=false) {
                  let cf = ao.shadowRoot.querySelector(`alert2-cfg-field[name="${aname}"]`);
                  await sleepMs(3);
                  //console.log(aname, cf.shadowRoot.innerHTML);
@@ -440,6 +439,8 @@
                  await sleepMs(3);
                  let ri = cf.shadowRoot.querySelector('div.renderInfo');
                  jassert(ri);
+                 jasserteq(ri.querySelector('ha-alert') !== null, hasErr);
+                 
                  let inner = ri.innerHTML;
                  jassert(inner);
                  let txt = ri.textContent;
@@ -466,8 +467,9 @@
                      jFireEvent(jj, 'input', { value: val });
                      //jj.value = val;
                  } else {
+                     jj = cf.shadowRoot.querySelector('ha-code-editor');
+                     jassert(jj);
                      if (val == '') {
-                         //jassert(false);
                          let cc = 100;
                          if (0) {
                              jj = cf.shadowRoot.querySelector('ha-code-editor')
@@ -478,8 +480,6 @@
                              await sleepMs(1);
                          } else {
                          }
-                         jj = cf.shadowRoot.querySelector('ha-code-editor');
-                         jassert(jj);
                          jj.value = val;
                          jFireEvent(jj, 'value-changed', { value: val });
                          while (cc-- > 0) {
@@ -495,8 +495,6 @@
                              console.log('    waiting for val to become empty', jj.value, val, cf.currP[aname]);
                          }
                      } else {
-                         jj = cf.shadowRoot.querySelector('ha-code-editor');
-                         jassert(jj);
                          jFireEvent(jj, 'value-changed', { value: val });
                      }
                  }
@@ -582,7 +580,7 @@
              await z.setField('notifier', '');
              await z.checkRender('notifier', /^\s+$/);
              await z.setField('notifier', 'foo,bar');
-             await z.checkRender('notifier', /illegal characters/);
+             await z.checkRender('notifier', /illegal characters/, hasErr=true);
              await z.setField('notifier', '[foo,bar]');
              await z.checkRender('notifier', /len=2.*"foo","bar"/);
              await z.setField('notifier', '{{ ["foo","baz"   ] }}');
@@ -628,21 +626,21 @@
              await z.setField('annotate_messages', 'on');
              await z.checkRender('annotate_messages', /result:true/);
              await z.setField('annotate_messages', 'foo');
-             await z.checkRender('annotate_messages', /invalid boolean/);
+             await z.checkRender('annotate_messages', /invalid boolean/, hasErr=true);
              await z.setField('annotate_messages', 'off');
              await z.checkRender('annotate_messages', /result:false/);
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: { 'annotate_messages': 'off' } }});
              await z.setField('annotate_messages', '');
-             await sleepMs(200);
+             await sleepMs(250);
              await z.checkRender('annotate_messages', /^\s+$/);
 
              // reminder_frequency_mins
              await z.setField('reminder_frequency_mins', '3');
              await z.checkRender('reminder_frequency_mins', /len=1\):\[3\]/);
              await z.setField('reminder_frequency_mins', '3,4');
-             await z.checkRender('reminder_frequency_mins', /expected float/);
+             await z.checkRender('reminder_frequency_mins', /expected float/, hasErr=true);
              await z.setField('reminder_frequency_mins', '[3,4]');
              await z.checkRender('reminder_frequency_mins', /len=2\):\[3,4\]/);
 
@@ -650,27 +648,27 @@
              await z.setField('supersede_debounce_secs', '3');
              await z.checkRender('supersede_debounce_secs', /result:3/);
              await z.setField('supersede_debounce_secs', '3,4');
-             await z.checkRender('supersede_debounce_secs', /expected float/);
+             await z.checkRender('supersede_debounce_secs', /expected float/, hasErr=true);
              
              // throttle_fires_per_mins
              await z.setField('throttle_fires_per_mins', '3');
-             await z.checkRender('throttle_fires_per_mins', /not a valid value/);
+             await z.checkRender('throttle_fires_per_mins', /not a valid value/, hasErr=true);
              await z.setField('throttle_fires_per_mins', '[3,5]');
              await z.checkRender('throttle_fires_per_mins', /len=2\):\[3,5\]/);
              
              // priority
              await z.setField('priority', '3');
-             await z.checkRender('priority', /must be one of/);
+             await z.checkRender('priority', /must be one of/, hasErr=true);
              await z.setField('priority', 'low');
              await z.checkRender('priority', /"low"/);
 
              await z.setField('skip_internal_errors', 'foo');
-             await z.checkRender('skip_internal_errors', /invalid boolean/);
+             await z.checkRender('skip_internal_errors', /invalid boolean/, hasErr=true);
              await z.setField('skip_internal_errors', 'on');
              await z.checkRender('skip_internal_errors', /result:true/);
 
              await z.setField('notifier_startup_grace_secs', '-3');
-             await z.checkRender('notifier_startup_grace_secs', /must be at least 0.0/);
+             await z.checkRender('notifier_startup_grace_secs', /must be at least 0.0/, hasErr=true);
              await z.setField('notifier_startup_grace_secs', '3');
              await z.checkRender('notifier_startup_grace_secs', /result:3/);
 
@@ -758,7 +756,7 @@
              await z.setField('domain', 'a');
              await z.checkRender('domain', /result:"a"/);
              await z.setField('domain', 'a{{"b"');
-             await z.checkRender('domain', /invalid template/);
+             await z.checkRender('domain', /invalid template/, hasErr=true);
              await z.setField('domain', 'a{{"b"}}');
              await z.checkRender('domain', /result:"ab"/);
              await z.setField('domain', 'd');
@@ -812,7 +810,7 @@
              await z.setField('trigger', '');
              await z.checkField('trigger', null);
              await z.setField('trigger', 'on');
-             await z.checkRender('trigger', /is not iterable/);
+             await z.checkRender('trigger', /is not iterable/, hasErr=true);
              await z.setField('trigger', "[{'platform':'state','entity_id':'sensor.zz'}]");
              await z.checkRender('trigger', /\[{"platform":"state/);
              await z.setField('trigger', '');
@@ -822,7 +820,7 @@
              await z.setField('trigger_on', '');
              await z.checkField('trigger_on', null);
              await z.setField('trigger_on', 'on');
-             await z.checkRender('trigger_on', /is not iterable/);
+             await z.checkRender('trigger_on', /is not iterable/, hasErr=true);
              await z.setField('trigger_on', "[{'platform':'state','entity_id':'sensor.zz'}]");
              await z.checkRender('trigger_on', /\[{"platform":"state/);
              await z.setField('trigger_on', '');
@@ -832,7 +830,7 @@
              await z.setField('trigger_off', '');
              await z.checkField('trigger_off', null);
              await z.setField('trigger_off', 'on');
-             await z.checkRender('trigger_off', /is not iterable/);
+             await z.checkRender('trigger_off', /is not iterable/, hasErr=true);
              await z.setField('trigger_off', "[{'platform':'state','entity_id':'sensor.zz'}]");
              await z.checkRender('trigger_off', /\[{"platform":"state/);
              await z.setField('trigger_off', '');
@@ -848,7 +846,7 @@
              await z.setField('hysteresis', '3');
              await z.checkRender('hysteresis', /result:3/);
              await z.setField('hysteresis', '-3');
-             await z.checkRender('hysteresis', /value must be at least/);
+             await z.checkRender('hysteresis', /value must be at least/, hasErr=true);
              await z.setField('hysteresis', '');
              await z.checkField('hysteresis', null);
              
@@ -868,7 +866,7 @@
              await z.setField('delay_on_secs', '3');
              await z.checkRender('delay_on_secs', /result:3/);
              await z.setField('delay_on_secs', 'a');
-             await z.checkRender('delay_on_secs', /expected float/);
+             await z.checkRender('delay_on_secs', /expected float/, hasErr=true);
              await z.setField('delay_on_secs', '');
              await z.checkField('delay_on_secs', null);
 
@@ -974,7 +972,7 @@
 
              // data
              await z.setField('data', 'yay');
-             await z.checkRender('data', /expected dict/);
+             await z.checkRender('data', /expected dict/, hasErr=true);
              await z.setField('data', '{a: 3}');
              await z.checkRender('data', /result:{"a":3}/);
              await z.setField('data', '{a: 3, "b": foo, "c": 3}');
@@ -984,7 +982,7 @@
 
              // throttle_fires_per_mins
              await z.setField('throttle_fires_per_mins', '3,4');
-             await z.checkRender('throttle_fires_per_mins', /not a valid/);
+             await z.checkRender('throttle_fires_per_mins', /not a valid/, hasErr=true);
              await z.setField('throttle_fires_per_mins', '[3,4]');
              await z.checkRender('throttle_fires_per_mins', /result \(len=2\):\[3,4\]/);
              await z.setField('throttle_fires_per_mins', '');
@@ -1002,7 +1000,7 @@
              await z.setField('supersede_debounce_secs', '3');
              await z.checkRender('supersede_debounce_secs', /result:3/);
              await z.setField('supersede_debounce_secs', '3,4');
-             await z.checkRender('supersede_debounce_secs', /expected float/);
+             await z.checkRender('supersede_debounce_secs', /expected float/, hasErr=true);
              await z.setField('supersede_debounce_secs', '');
              await z.checkField('supersede_debounce_secs', null);
              
@@ -1011,7 +1009,13 @@
              await z.checkRender('priority', /result:"high"/);
              await z.setField('priority', '');
              await z.checkField('priority', null);
-             
+
+             // annotate_messages
+             await z.setField('annotate_messages', 'off');
+             await z.checkRender('annotate_messages', /result:false/);
+             await z.setField('annotate_messages', '');
+             await z.checkField('annotate_messages', null);
+
              // supersedes
              await z.setField('supersedes', '{ domain: d, name: n2 }');
              await z.checkRender('supersedes', /result \(len=1\):\[{"domain":"d","name":"n2"}\]/);
@@ -1025,12 +1029,30 @@
              await z.checkField('supersedes', null);
              await z.setField('supersedes', 'null');
              await z.checkRender('supersedes', /result:null/);
+             await z.setField('supersedes', '{{ { "domain": "d", "name": genElem } }}');
+             await z.checkRender('supersedes', /expected a dictionary/, hasErr=true);
 
-             // annotate_messages
-             await z.setField('annotate_messages', 'off');
-             await z.checkRender('annotate_messages', /result:false/);
-             await z.setField('annotate_messages', '');
-             await z.checkField('annotate_messages', null);
+             //    and if generator is specified, that triggers a reeval
+             await z.setField('generator', 'ff');
+             await sleepMs(150);
+             await z.checkRender('supersedes', /result \(len=1\):\[{"domain":"d","name":"ff"}\]/);
+             await z.setField('generator', 'fg');
+             await sleepMs(150);
+             await z.checkRender('supersedes', /result \(len=1\):\[{"domain":"d","name":"fg"}\]/);
+             await z.setField('supersedes', 'null');
+             await z.checkRender('supersedes', /result:null/);
+             await z.setField('generator', 'fh');
+             await z.checkRender('supersedes', /result:null/);
+             // Resetting generator to empty string seems a bit flaky.
+             //await z.setField('generator', '');
+
+             await z.setField('generator', '[3]');
+             await sleepMs(150);
+             await z.setField('delay_on_secs', '{{ genElem }}');
+             await z.checkRender('delay_on_secs', /result:3/);
+             await z.setField('generator', '[4]');
+             await sleepMs(150);
+             await z.checkRender('delay_on_secs', /result:4/);
 
              // generator
              await z.setField('generator', 'ff');
@@ -1040,7 +1062,7 @@
              await z.setField('generator', '');
              await z.checkField('generator', null);
              await z.setField('generator', '[20, 10');
-             await z.checkRender('generator', /YAML parse error/);
+             await z.checkRender('generator', /YAML parse error/, hasErr=true);
              await z.setField('generator', '[20, 10]');
              await z.checkRender('generator', /len=2\):\[20,10\].*\n.*First element vars/);
 

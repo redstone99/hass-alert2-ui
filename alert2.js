@@ -4,7 +4,7 @@ const css = LitElement.prototype.css;
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.11.3  (internal 68)';
+const VERSION = 'v1.11.4  (internal 69)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2722,6 +2722,16 @@ let helpCommon = {
                        <div>Truthy to summary notify using <code>notifier</code>:</div><div class="exval"><code>yes</code></div>
                        <div>Falsey or null for no summary notifications:</div><div class="exval"><code>false</code></div>
                   </div>`,
+    done_notifier: html`Name of notifiers to use for sending notifications that a condition alert has stopped firing. Can be:
+                  <div class="extable">
+                       <div>Single notifier or name of entity with list</div>
+                           <div class="exval"><code>telegram1</code><div class="bigor">or</div><code>"telegram1"</code><div class="bigor">or</div><code>sensor.my_notifier_list</code></div>
+                       <div>List of notifiers (YAML flow):</div><div class="exval"><code>[ telegram1, telegram2 ]</code></div>
+                       <div>List of notifiers (YAML):</div><div class="exval"><pre>- telegram1\n- telegram2</code></pre></div>
+                      <div>Template producing list of notifiers:</div><div class="exval"><code>{{ [ "tel1", "tel2" ] }}</code></div>
+                       <div>Truthy to notify using <code>notifier</code>:</div><div class="exval"><code>yes</code></div>
+                       <div>Falsey or null for no done notifications:</div><div class="exval"><code>false</code></div>
+                  </div>`,
     annotate_messages: html`If true, add extra context information to notifications, like number of times alert has fired since last notification. Can be:
                   <div class="extable">
                          <div>Truthy (true/yes/on/1 or opposites)</div><div class="exval"><code>true</code></div>
@@ -3009,6 +3019,11 @@ class Alert2EditDefaults extends LitElement {
                   @expand-click=${this.expandClick}
                   .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
                <div slot="help">${helpCommon.summary_notifier}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="done_notifier" type=${FieldTypes.TEMPLATE}
+                 templateType=${TemplateTypes.LIST} .defaultP=${this._topConfigs.rawYaml.defaults}
+                  @expand-click=${this.expandClick}
+                  .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
+               <div slot="help">${helpCommon.done_notifier}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="annotate_messages" type=${FieldTypes.BOOL}
                  .defaultP=${this._topConfigs.rawYaml.defaults}
                   @expand-click=${this.expandClick}
@@ -3217,7 +3232,7 @@ class Alert2Create extends LitElement {
                             'reminder_frequency_mins',
                             ].includes(fname)) {
                     val = rawVal;
-                } else if (['generator', 'notifier', 'summary_notifier', 'supersedes'].includes(fname)) {
+                } else if (['generator', 'notifier', 'summary_notifier', 'done_notifier', 'supersedes'].includes(fname)) {
                     if (hasJinjaTempl(rawVal)) {
                         val = yamlEscape(rawVal);
                     } else {
@@ -3378,6 +3393,11 @@ class Alert2Create extends LitElement {
                   templateType=${TemplateTypes.LIST} .genResult=${this._generatorResult}
                   .savedP=${{}} .currP=${this.alertCfg} >
                <div slot="help">${helpCommon.summary_notifier}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="done_notifier" type=${FieldTypes.TEMPLATE}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  templateType=${TemplateTypes.LIST} .genResult=${this._generatorResult}
+                  .savedP=${{}} .currP=${this.alertCfg} >
+               <div slot="help">${helpCommon.done_notifier}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="title" type=${FieldTypes.TEMPLATE}
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
