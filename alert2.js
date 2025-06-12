@@ -4,7 +4,7 @@ const css = LitElement.prototype.css;
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.11.4  (internal 69)';
+const VERSION = 'v1.12  (internal 70)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -635,6 +635,10 @@ class Alert2Overview extends LitElement {
         element.hass = this._hass;
         element.classList.add('aRowElement');
         if (element instanceof Alert2EntityRow) {
+            if (!this._displayValMonitor) {
+                // This shouldn't happen - TODO fix this.
+                console.warn('setting displayValMonitor to', this._displayValMonitor);
+            }
             element.displayValMonitor = this._displayValMonitor;
             element.isSuperseded = dispInfo.isSuperseded;
             if (dispInfo.isSuperseded) {
@@ -2754,6 +2758,10 @@ let helpCommon = {
                   <div class="extable">
                           <div>Low, medium or high</div><div class="exval"><code>low</code></div>
                   </div>`,
+    icon: html`Icon to display next to alert name. Defaults to "mdi:alert". Can be:
+                  <div class="extable">
+                          <div>prefix:name</div><div class="exval"><code>mdi:alert</code></div>
+                  </div>`,
     
     domain: html`Alert entity name is alert2.[domain]_[name]. Can be:
                   <div class="extable">
@@ -3044,6 +3052,11 @@ class Alert2EditDefaults extends LitElement {
                   @expand-click=${this.expandClick}
                  .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
                <div slot="help">${helpCommon.priority}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="icon" type=${FieldTypes.STR}
+                 .defaultP=${this._topConfigs.rawYaml.defaults}
+                  @expand-click=${this.expandClick}
+                 .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
+               <div slot="help">${helpCommon.icon}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="supersede_debounce_secs" type=${FieldTypes.FLOAT}
                  .defaultP=${this._topConfigs.rawYaml.defaults}
                   @expand-click=${this.expandClick}
@@ -3226,7 +3239,7 @@ class Alert2Create extends LitElement {
                      'title', 'target',
                      'annotate_messages', 'early_start', 'generator_name', 'manual_on', 'manual_off',
                      'done_message', 'reminder_message', 'supersede_debounce_secs', 'display_msg', 'delay_on_secs',
-                     'priority'].includes(fname)) {
+                     'priority','icon'].includes(fname)) {
                     val = yamlEscape(rawVal);
                 } else if (['trigger', 'trigger_on', 'trigger_off', 'data', 'throttle_fires_per_mins',
                             'reminder_frequency_mins',
@@ -3369,6 +3382,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.priority}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="icon" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.icon}</div></alert2-cfg-field>
 
             <h3>Notifications</h3>
             <alert2-cfg-field .hass=${this.hass} name="message" type=${FieldTypes.TEMPLATE}

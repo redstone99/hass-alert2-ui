@@ -565,6 +565,7 @@
              z.checkField('supersede_debounce_secs', null);
              z.checkField('throttle_fires_per_mins', null);
              z.checkField('priority', null);
+             z.checkField('icon', null);
              z.checkField('skip_internal_errors', null);
              z.checkField('notifier_startup_grace_secs', null);
              z.checkField('defer_startup_notifications', null);
@@ -662,6 +663,12 @@
              await z.setField('priority', 'low');
              await z.checkRender('priority', /"low"/);
 
+             // icon
+             await z.setField('icon', '3');
+             await z.checkRender('icon', /prefix:name/, hasErr=true);
+             await z.setField('icon', 'a:b');
+             await z.checkRender('icon', /"a:b"/);
+
              await z.setField('skip_internal_errors', 'foo');
              await z.checkRender('skip_internal_errors', /invalid boolean/, hasErr=true);
              await z.setField('skip_internal_errors', 'on');
@@ -689,6 +696,7 @@
              z.setField('notifier_startup_grace_secs', '6.2');
              z.setField('defer_startup_notifications', '[blah,ick]');
              z.setField('priority', 'medium');
+             z.setField('icon', 'c:d');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: {
@@ -700,6 +708,7 @@
                               supersede_debounce_secs: '78',
                               throttle_fires_per_mins: '[2,5]',
                               priority: 'medium',
+                              icon: 'c:d',
                           },
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.2',
@@ -721,6 +730,7 @@
                               supersede_debounce_secs: '78',
                               throttle_fires_per_mins: '[2,5]',
                               priority: 'medium',
+                              icon: 'c:d',
                           },
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.3',
@@ -739,6 +749,7 @@
              z.checkField('supersede_debounce_secs', '78');
              z.checkField('throttle_fires_per_mins', '[2,5]');
              z.checkField('priority', 'medium');
+             z.checkField('icon', 'c:d');
              
              z.checkField('skip_internal_errors', 'no');
              z.checkField('notifier_startup_grace_secs', '6.3');
@@ -1009,6 +1020,12 @@
              await z.checkRender('priority', /result:"high"/);
              await z.setField('priority', '');
              await z.checkField('priority', null);
+
+             // icon
+             await z.setField('icon', 'e:f');
+             await z.checkRender('icon', /result:"e:f"/);
+             await z.setField('icon', '');
+             await z.checkField('icon', null);
 
              // annotate_messages
              await z.setField('annotate_messages', 'off');
