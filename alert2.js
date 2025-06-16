@@ -4,7 +4,7 @@ const css = LitElement.prototype.css;
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.12  (internal 74)';
+const VERSION = 'v1.12.1  (internal 75)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -1560,14 +1560,15 @@ class MoreInfoAlert2 extends LitElement {
     firstUpdated() {
         super.firstUpdated();
         // see https://lit.dev/docs/v1/components/lifecycle/#firstupdated
-        // could use connectedCallback to do this earlier
-        let s1 = this.shadowRoot.querySelector('ha-formfield#for-snooze ha-textfield');
-        this.textEl = s1;
-        this.textEl.validityTransform = (newValue, nativeValidity) => {
-            let isvalid = strIsValidNumber(newValue) != null;
-            return { valid: isvalid };
+        if (0) {
+            // could use connectedCallback to do this earlier
+            let s1 = this.shadowRoot.querySelector('ha-formfield#for-snooze ha-textfield');
+            this.textEl = s1;
+            this.textEl.validityTransform = (newValue, nativeValidity) => {
+                let isvalid = strIsValidNumber(newValue) != null;
+                return { valid: isvalid };
+            }
         }
-        this.fetchCurr();
         customElements.whenDefined('state-card-alert2').then(()=>{
             this.requestUpdate();
         });
@@ -1587,6 +1588,10 @@ class MoreInfoAlert2 extends LitElement {
         this.getHistory();
     }
     fetchCurr() {
+        if (!this.hass || !this.stateObj) {
+            console.log('skipping fetchCurr since hass or stateObj is null', this.hass, this.stateObj);
+            return;
+        }
         const msAgo = 24*60*60*1000.0;
         this._historyStartDate = new Date((new Date()).getTime() - msAgo);
         this._historyEndDate = null;
@@ -1594,8 +1599,8 @@ class MoreInfoAlert2 extends LitElement {
         this.getHistory();
     }
     getHistory() {
-        console.log('will getHistory for', stateObj.entity_id, 'from', this._historyStartDate, 'to', this._historyEndDate);
         let stateObj = this.stateObj;
+        console.log('will getHistory for', stateObj.entity_id, 'from', this._historyStartDate, 'to', this._historyEndDate);
         let historyUrl = `history/period/${this._historyStartDate.toISOString()}?filter_entity_id=${stateObj.entity_id}`;
         if (this._historyEndDate) {
             historyUrl += `&end_time=${this._historyEndDate.toISOString()}`;
@@ -1648,6 +1653,10 @@ class MoreInfoAlert2 extends LitElement {
     render() {
         if (!this.hass || !this.stateObj) {
             return html`waiting for hass and stateObj to be defined`;
+        }
+        if (this._historyStartDate == null) {
+            // do first fetch of history
+            this.fetchCurr();
         }
         let stateObj = this.stateObj;
         let stateValue = stateObj.attributes.notification_control;
@@ -1703,7 +1712,7 @@ class MoreInfoAlert2 extends LitElement {
                         lastOffDate = null;
                     }
                     if (lastOffDate && lastOnDate) {
-                        console.error('for entity', entName, 'saw change in both alert on & off time in one db update. Showing only most recent one', elem);
+                        console.warn('for entity', entName, 'saw change in both alert on & off time in one db update. Showing only most recent one', elem);
                         if (lastOnDate > lastOffDate) {
                             lastOffDate = null;
                         } else {
@@ -1771,6 +1780,10 @@ class MoreInfoAlert2 extends LitElement {
                 }
             }
         }
+        let snoozeValidFunc = (newValue, nativeValidity) => {
+            return { valid: (strIsValidNumber(newValue) != null) };
+        }
+
         // This is written so that it will stay live and update notification control status,
         // but will not change the notification control settings themselves,
         // so you don't get overrulled why trying to change settings.  This is done by
@@ -1830,6 +1843,7 @@ class MoreInfoAlert2 extends LitElement {
                           .disabled=${false}
                           .required=${is_snoozed}
                           .suffix=${"hours"}
+                          .validityTransform=${snoozeValidFunc}
                          type="number"
                          inputMode="decimal"
                           autoValidate

@@ -106,7 +106,7 @@
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
              if (0) {
-                 jassert(await startTest(doTestRender));
+                 jassert(await startTest(doTestMoreInfo));
                  return;
              }
              jassert(await startTest(doTestDefaults));
@@ -122,6 +122,7 @@
              jassert(await startTest(doTestConfig));
              jassert(await startTest(doTestSupersedeMgr));
              jassert(await startTest(doTestInternal));
+             jassert(await startTest(doTestMoreInfo));
              let testStatusEl = document.querySelector('#testStatus');
              if (jassertFailCount == 0) {
                  testStatusEl.innerHTML = `Test: All done`;
@@ -247,9 +248,17 @@
              let data;
              try {
                  fetchResponse = await fetch(`http://localhost:50005/api/${method}`, settings);
-                 data = await fetchResponse.json();
+                 if (fetchResponse.ok) {
+                     data = await fetchResponse.json();
+                 } else {
+                     let txt = await fetchResponse.text();
+                     throw {
+                         error: `Response error: ${fetchResponse.status} with txt=${txt}`,
+                         status_code: fetchResponse.status,
+                     };
+                 }
              } catch (e) {
-                 console.error(method, opts, e);
+                 console.error(method, opts, 'err=', e);
                  throw e;
              }
              console.log('got response to', method, opts, '   as   ', data, 'ok=',fetchResponse.ok);
@@ -634,7 +643,7 @@
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: { 'annotate_messages': 'off' } }});
              await z.setField('annotate_messages', '');
-             await sleepMs(250);
+             await sleepMs(500);
              await z.checkRender('annotate_messages', /^\s+$/);
 
              // reminder_frequency_mins
@@ -2041,7 +2050,14 @@
                                     ['n1', 'n4', 'n2', 'n3'], nBelow=2);
              z.ao.remove();
          }
-         
+         async function doTestMoreInfo() {
+             let z = await initTest('more-info-alert2');
+             let elem = z.ao;
+             elem.stateObj = createState('nn', 5000, 10000, null);
+             await sleepMs(500); // wait for history rpc
+             jassert(z.ao.shadowRoot.querySelector('div.alist div').textContent.trim().startsWith('No state updates found since'));
+             z.ao.remove();
+         }
         </script>
     </head>
     <body>
