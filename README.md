@@ -186,7 +186,7 @@ If you click on a specific alert listed in the alert overview, a dialog pops up 
 
 The first line is a repeat of the alert status.
 
-The second "Previous Firings" section lists each firing over the previous 24 hours, limited to the most recent 20 events.  The time when the alert turned on or off is listed as well as the message template text rendered when the alert fired.  The "PREV" button lets you go back further in time and "RESET" returns the listing to the firings over the past 24 hours and refreshes the listing.  You may see events listed that have time `unknown`. This are extra events inserted due to either HomeAssistant restarting or the first time an alert is created (TODO - filter these spurious events out).
+The second "Previous Firings" section lists each firing over the previous 24 hours, limited to the most recent 20 events.  The time when the alert turned on or off is listed as well as the message template text rendered when the alert fired.  The "PREV" button lets you go back further in time and "RESET" returns the listing to the firings over the past 24 hours and refreshes the listing.
 
 The "Notifications" section lets you snooze or disable notifications. Select an option and click "Update".  The "Status" line will update dynamically.
 

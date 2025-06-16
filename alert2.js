@@ -4,7 +4,7 @@ const css = LitElement.prototype.css;
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.12  (internal 70)';
+const VERSION = 'v1.12  (internal 74)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -1225,7 +1225,7 @@ class Alert2EntityRow extends LitElement  {
 function formatLogDate(idate) {
     function z2(num) { return ('0'+num).slice(-2); }
     function z3(num) { return ('00'+num).slice(-3); }
-    let adate = new Date(Date.parse(idate));
+    let adate = new Date(idate);
     // e.g., 2024/12/20 13:05:15.123  (local time)
     return `${adate.getFullYear()}/${z2(adate.getMonth()+1)}/${z2(adate.getDate())} ${z2(adate.getHours())}:${z2(adate.getMinutes())}:${z2(adate.getSeconds())}.${z3(adate.getMilliseconds())}`
 }
@@ -1594,7 +1594,7 @@ class MoreInfoAlert2 extends LitElement {
         this.getHistory();
     }
     getHistory() {
-        console.log('will getHistory from', this._historyStartDate);
+        console.log('will getHistory for', stateObj.entity_id, 'from', this._historyStartDate, 'to', this._historyEndDate);
         let stateObj = this.stateObj;
         let historyUrl = `history/period/${this._historyStartDate.toISOString()}?filter_entity_id=${stateObj.entity_id}`;
         if (this._historyEndDate) {
@@ -1637,6 +1637,10 @@ class MoreInfoAlert2 extends LitElement {
                     }
                 }
                 outerThis._historyArr = newArr;
+            } else if (Array.isArray(rez) && rez.length == 0) {
+                outerThis._historyArr = [];
+            } else {
+                console.error('in fetching history for ', stateObj.entity_id, this._historyStartDate, this._historyEndDate, 'got malformed result', rez);
             }
         }).catch((err)=> { console.error('hass call to get alert history failed: ', err); });
     }
@@ -1655,7 +1659,8 @@ class MoreInfoAlert2 extends LitElement {
         } else if (stateValue == NOTIFICATIONS_DISABLED) {
             notification_status = "disabled";
         } else {
-            notification_status = "snoozed until " + formatLogDate(stateValue);
+            let idate = Date.parse(stateValue);
+            notification_status = "snoozed until " + formatLogDate(idate);
         }
 
         let is_snoozed = false;
@@ -1676,37 +1681,94 @@ class MoreInfoAlert2 extends LitElement {
         }
         let historyHtml = html`Fetching history...`;
         if (this._historyArr !== null) {
-            if (this._historyArr.length == 0) {
-                historyHtml = html`No history exists`;
-            } else {
-                const thass = this.hass;
-                function rHist(elem) {
-                    const onoff = isAlert ? html`<td>${elem.state}</td>` : '';
-                    const extraTxt = (isAlert && elem.state == 'off') ? '' : elem.attributes.last_fired_message;
-                    let eventTime = elem.attributes.last_fired_time;
-                    if (isAlert) {
-                        eventTime = (elem.state == 'on') ? elem.attributes.last_on_time : elem.attributes.last_off_time;
+            let histHtmlElems = [];
+            let prevEventDate = null;
+            for (let idx = this._historyArr.length - 1; idx >= 0; idx--) {
+                const elem = this._historyArr[idx];
+                let anEventDate = null;
+                let stateHtml = '';
+                let extraTxt = '';
+                if (isAlert) {
+                    let stateTxt = elem.state;
+                    let lastOnDate = elem.attributes.last_on_time ? Date.parse(elem.attributes.last_on_time) : null;
+                    let lastOffDate = elem.attributes.last_off_time ? Date.parse(elem.attributes.last_off_time) : null;
+                    if (lastOnDate && (lastOnDate <= prevEventDate ||
+                                       (this._historyStartDate && lastOnDate < this._historyStartDate) ||
+                                       (this._historyEndDate && lastOnDate >= this._historyEndDate))) {
+                        lastOnDate = null;
                     }
-                    const firedTime = eventTime ?
-                          html`<j-relative-time
-                                   .timestamp=${Date.parse(eventTime)} .useLongnames=${true}></j-relative-time>` : 'unknown';
-                    const absTime = eventTime ?
-                          html`<span style="font-size:0.8em;">${formatLogDate(eventTime)}</span>` : 'unknown';
-                    return html`
-                <tr class="eventrow">
-                <td class="eventtime">${firedTime}<br/>${absTime}</td>
-                ${onoff}
-                <td>${extraTxt}</td>
-                </tr>
-                    `;
+                    if (lastOffDate && (lastOffDate <= prevEventDate ||
+                                       (this._historyStartDate && lastOffDate < this._historyStartDate) ||
+                                       (this._historyEndDate && lastOffDate >= this._historyEndDate))) {
+                        lastOffDate = null;
+                    }
+                    if (lastOffDate && lastOnDate) {
+                        console.error('for entity', entName, 'saw change in both alert on & off time in one db update. Showing only most recent one', elem);
+                        if (lastOnDate > lastOffDate) {
+                            lastOffDate = null;
+                        } else {
+                            lastOnDate = null;
+                        }
+                    }
+                    if (lastOnDate) {
+                        if (elem.state !== 'on') {
+                            console.error(entName, 'looks like alert fired, but state does not match', elem);
+                            stateTxt += ' [ turned on (js logic err) ]';
+                        }
+                        anEventDate = lastOnDate;
+                        extraTxt = elem.attributes.last_fired_message;
+                    } else if (lastOffDate) {
+                        if (elem.state !== 'off') {
+                            console.error(entName, 'looks like alert turned off, but state does not match', elem);
+                            stateTxt += ' [ turned off (js logic err) ]';
+                        }
+                        anEventDate = lastOffDate;
+                    } else {
+                        // do not set anEventDate, so won't add to display list
+                    }
+                    stateHtml = html`<td>${stateTxt}</td>`;
+                } else {
+                    let lastEventDate = elem.attributes.last_fired_time ? Date.parse(elem.attributes.last_fired_time) : null;
+                    if (lastEventDate && (lastEventDate <= prevEventDate ||
+                                       (this._historyStartDate && lastEventDate < this._historyStartDate) ||
+                                       (this._historyEndDate && lastEventDate >= this._historyEndDate))) {
+                        lastEventDate = null;
+                    }
+                    if (lastEventDate) {
+                        anEventDate = lastEventDate;
+                        extraTxt = elem.attributes.last_fired_message;
+                    }
                 }
+                if (anEventDate) {
+                    const firedTime = 
+                          html`<j-relative-time .timestamp=${anEventDate} .useLongnames=${true}></j-relative-time>`;
+                    const absTime =
+                          html`<span style="font-size:0.8em;">${formatLogDate(anEventDate)}</span>`;
+                    histHtmlElems.push(html`
+                       <tr class="eventrow">
+                       <td class="eventtime">${firedTime}<br/>${absTime}</td>
+                       ${stateHtml}
+                       <td>${extraTxt}</td>
+                       </tr>
+                       `);
+                    prevEventDate = anEventDate;
+                }
+            }
+            if (histHtmlElems.length > 0) {
+                histHtmlElems.reverse();
                 historyHtml = html`<table>
                     <tr>
                       <th>Event time</th>
                       ${ isAlert ? html`<th style="padding-left: 1em;">On/Off</th>` : '' }
                       <th style="padding-left: 1em;">Message</th>
                     </tr>
-                    ${this._historyArr.map((elem) => rHist(elem) )}</table>`;
+                    ${histHtmlElems}</table>`;
+            } else {
+                if (this._historyEndDate) {
+                    historyHtml = html`<div style="margin-left:2em;">No state updates found between ${formatLogDate(this._historyStartDate)} and ${formatLogDate(this._historyEndDate)}</div>`;
+                } else {
+                    historyHtml = html`<div style="margin-left:2em;">No state updates found since ${formatLogDate(this._historyStartDate)}</div>`;
+                }
             }
         }
         // This is written so that it will stay live and update notification control status,
@@ -1722,7 +1784,7 @@ class MoreInfoAlert2 extends LitElement {
             ></state-card-content>
             <div id="previousFirings" style="margin-top: 1em;">
                <div style="display: flex; margin-top: 2em; margin-bottom: 1em; align-items: center;">
-                  <div class="title">Previous Firings</div>
+                  <div class="title">Previous Firings (24 hrs)</div>
                   <div style="flex: 1 1 0; max-width: 10em;"></div>
                   <ha-progress-button
                     .progress=${this._fetchPrevInProgress}
