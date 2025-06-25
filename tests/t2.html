@@ -992,7 +992,7 @@
 
              // data
              await z.setField('data', 'yay');
-             await z.checkRender('data', /expected dict/, hasErr=true);
+             await z.checkRender('data', /must be a dict/, hasErr=true);
              await z.setField('data', '{a: 3}');
              await z.checkRender('data', /result:{"a":3}/);
              await z.setField('data', '{a: 3, "b": foo, "c": 3}');
