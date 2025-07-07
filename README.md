@@ -221,3 +221,16 @@ You can also click on the config field name to show some help info, including ex
 ![Editing config help](resources/edit-help.png)
 
 Most fields are interpreted as YAML, with the exception that if you enter template characters (e.g., "{{" ), then the input is automatically quoted, to simplify typing.
+
+## Contributing
+
+We welcome ideas for improving Alert2 UI or help implementing any of the great ideas people have suggested so far. A number of great ideas have arisen on the main [development thread](https://community.home-assistant.io/t/alert2-a-new-alerting-component). Feel free to jump in on any of the threads!
+
+### Testing
+
+To run the tests, you must first run the [dummy server](https://github.com/redstone99/hass-alert2#testing) from hass-alert2.  Then you can run the tests in your browser by visiting:
+
+    http://localhost:50005/jtest/tests/t.html
+    http://localhost:50005/jtest/tests/t2.html
+
+Both pages should display "Done" when they are done.  You may need to show the console logs while running to slow the test down a bit to get them to pass.  A number of sections rely on sleeping to ensure an update has occurred (TODO - replace sleeps with waits on DOM content to show up).
