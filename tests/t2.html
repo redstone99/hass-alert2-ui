@@ -642,6 +642,7 @@
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: { 'annotate_messages': 'off' } }});
+             await sleepMs(100);
              await z.setField('annotate_messages', '');
              await sleepMs(500);
              await z.checkRender('annotate_messages', /^\s+$/);
