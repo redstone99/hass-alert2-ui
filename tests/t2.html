@@ -678,6 +678,12 @@
              await z.setField('icon', 'a:b');
              await z.checkRender('icon', /"a:b"/);
 
+             // data
+             await z.setField('data', '3');
+             await z.checkRender('data', /must be a dict/, hasErr=true);
+             await z.setField('data', '{"a":7 }');
+             await z.checkRender('data', /{"a":7}/);
+
              await z.setField('skip_internal_errors', 'foo');
              await z.checkRender('skip_internal_errors', /invalid boolean/, hasErr=true);
              await z.setField('skip_internal_errors', 'on');
@@ -706,6 +712,7 @@
              z.setField('defer_startup_notifications', '[blah,ick]');
              z.setField('priority', 'medium');
              z.setField('icon', 'c:d');
+             z.setField('data', '{"a":8}');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: {
@@ -718,6 +725,7 @@
                               throttle_fires_per_mins: '[2,5]',
                               priority: 'medium',
                               icon: 'c:d',
+                              data: '{"a":8}',
                           },
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.2',
@@ -740,6 +748,7 @@
                               throttle_fires_per_mins: '[2,5]',
                               priority: 'medium',
                               icon: 'c:d',
+                              data: '{"a":8}',
                           },
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.3',
@@ -759,6 +768,7 @@
              z.checkField('throttle_fires_per_mins', '[2,5]');
              z.checkField('priority', 'medium');
              z.checkField('icon', 'c:d');
+             z.checkField('data', '{"a":8}');
              
              z.checkField('skip_internal_errors', 'no');
              z.checkField('notifier_startup_grace_secs', '6.3');
@@ -1416,6 +1426,8 @@
              z.checkDefault('skip_internal_errors', /empty: false/);
              z.checkDefault('notifier_startup_grace_secs', /empty: 3/);
              z.checkDefault('defer_startup_notifications', /empty: \["foo"\]/);
+             z.checkDefault('icon', /empty: "mdi:alert"/);
+             z.checkDefault('data', null);
 
              z.ao.remove();
              // now let's test create alert
@@ -1455,6 +1467,19 @@
              z.checkDefault('annotate_messages', /empty: "yes"/);
              z.checkDefault('generator', null);
              z.checkDefault('generator_name', null);
+             z.ao.remove();
+
+             // Now set data default
+             z = await initTest('alert2-edit-defaults');
+             await sleepMs(11);
+             z.setField('data', '{"a":13}');
+             await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
+             z.ao.remove();
+
+             // now let's test create alert
+             z = await initTest('alert2-create');
+             await sleepMs(100);
+             z.checkDefault('data', /empty: {"a":13}/);
              z.ao.remove();
          }
          async function doTest6() {

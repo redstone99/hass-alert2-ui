@@ -1,10 +1,12 @@
 const LitElement = Object.getPrototypeOf(customElements.get("ha-panel-lovelace"));
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
+// notificaiton_control uses same string for enable/disable.  for snooze it uses timestamp
 const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
-const NOTIFICATION_SNOOZE = 'snooze'
-const VERSION = 'v1.12.1  (internal 75)';
+const NOTIFICATIONS_SNOOZED = 'snooze'
+const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
+const VERSION = 'v1.12.1  (internal 78)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -882,7 +884,7 @@ class Alert2Overview extends LitElement {
                     }
                 } else {
                     // Edge triggered alert
-                    if (ent.state) {
+                    if (ent.state && ent.state !== EVENT_ALERT_NEVER_FIRED_STATE) {
                         let lastFireMs = Date.parse(ent.state);
                         //isAcked = lastAckMs > lastFireMs;
                         testMs = lastFireMs;
@@ -1063,6 +1065,13 @@ class Alert2EntityRow extends LitElement  {
     }
     set displayValMonitor(ad) {
         this._displayValMonitor = ad;
+        // Somehow, connectedCallback can be called while this._displayValMonitor is null.
+        // I think it's due to different orderings of calls to parent & child connectedCallback
+        // So we don't assume we're connected when displayValMonitor is set.
+        if (this._isConnected) {
+            let entity_id = this._config.entity;
+            this._displayValMonitor.addChangeCb(entity_id, this.display_change_cb);
+        }
     }
     set isSuperseded(abool) {
         this._isSuperseded = abool;
@@ -1077,6 +1086,7 @@ class Alert2EntityRow extends LitElement  {
         this.display_change_cb = null;
         this._displayValMonitor = null;
         this._isSuperseded = false;
+        this._isConnected = false;
     }
     setConfig(config) {
         if (!config || !config.entity) {
@@ -1087,7 +1097,6 @@ class Alert2EntityRow extends LitElement  {
     connectedCallback() {
         super.connectedCallback();
 
-        //console.log(this._config.entity, 'connectedCallback so calling addChangeCb');
         if (this.display_change_cb) {
             console.error(this._config.entity, 'display_change_cb is set but calling connectedCallback');
         }
@@ -1095,15 +1104,24 @@ class Alert2EntityRow extends LitElement  {
             this.display_msg = newMsg;
             this.has_display_msg = newHasMsg;
         }
-        let entity_id = this._config.entity;
-        this._displayValMonitor.addChangeCb(entity_id, this.display_change_cb);
+        this._isConnected = true;
+        // Somehow, connectedCallback can be called while this._displayValMonitor is null.
+        // I don't understand how, unless somehow parent is rendered before connectedCallback or after
+        // disconnectedCallback.
+        if (this._displayValMonitor) {
+            let entity_id = this._config.entity;
+            this._displayValMonitor.addChangeCb(entity_id, this.display_change_cb);
+        }
     }
     disconnectedCallback() {
         super.disconnectedCallback();
         let entity_id = this._config.entity;
         //console.log(this._config.entity, 'disconnectedCallback so calling removeChangeCb');
-        this._displayValMonitor.removeChangeCb(entity_id, this.display_change_cb);
-        this.display_change_cb = null;
+        this._isConnected = false;
+        if (this._displayValMonitor) {
+            this._displayValMonitor.removeChangeCb(entity_id, this.display_change_cb);
+            this.display_change_cb = null;
+        }
     }
     _rowClick(ev) {
         console.log('_rowClick', ev);
@@ -1357,11 +1375,11 @@ class HaAlert2State extends LitElement {
                 }
             } // else - should never happen, was checked when populated _shownEntities list.
         } else {
-            if (ent.state) {
+            if (ent.state && ent.state !== EVENT_ALERT_NEVER_FIRED_STATE) {
                 last_fired_time = Date.parse(ent.state);
                 msg = html`<j-relative-time .timestamp=${last_fired_time} .useLongnames=${false}></j-relative-time>`;
             } else {
-                msg = html`has never fired`;
+                msg = html`${EVENT_ALERT_NEVER_FIRED_STATE}`;
             }
         }
         let ackButton = ''
@@ -1500,7 +1518,7 @@ function strIsValidNumber(astr) {
     let val = Number(bstr);
     if (bstr.length > 0 && !isNaN(val) && val >= 0) {
         return val;
-    } else { return null; }
+    } else { return false; }
 }
 
 // Add this attribute to alert entity attributes:
@@ -1516,16 +1534,22 @@ class MoreInfoAlert2 extends LitElement {
         
         _requestInProgress: {state: true},
         _ackInProgress: {state: true},
-        _currValue: {state: true},
+        _currSnoozeValue: {state: true},
+        _currSelectorValue: {state: true},
         _historyArr: {state: true},
+        _snooze_includes_ack: {state: true},
     }
     // I don't think anything sets hass on MoreInfoAlert2 and so this code will never run after init
     shouldUpdate(changedProps) {
         //console.log('MoreInfoAlert2  shouldUpdate: ', changedProps.size);
-        if (changedProps.has('stateObj') && this._currValue === undefined) {
+        if (changedProps.has('stateObj') && this._currSelectorValue === undefined) {
             const stateObj = changedProps.get('stateObj');
             if (stateObj) {
-                this._currValue = stateObj.attributes.notification_control;
+                let nc = stateObj.attributes.notification_control;
+                this._currSelectorValue = nc;
+                if (nc && nc !== NOTIFICATIONS_DISABLED && nc !== NOTIFICATIONS_ENABLED) {
+                    this._currSelectorValue = NOTIFICATIONS_SNOOZED;
+                }
             }
         }
         if (changedProps.size > 1) { return true; }
@@ -1544,13 +1568,15 @@ class MoreInfoAlert2 extends LitElement {
         super();
         this._requestInProgress = false;
         this._ackInProgress = false;
-        this._currValue = undefined;
+        this._currSnoozeValue   = undefined;
+        this._currSelectorValue = undefined;
         this.textEl = null;
         this._historyArr = null;
         this._historyStartDate = null;
         this._historyEndDate = null;
         this._fetchPrevInProgress = false;
         this._fetchCurrInProgress = false;
+        this._snooze_includes_ack = true;
         // no shadowRoot yet.
     }
     connectedCallback() {
@@ -1560,15 +1586,6 @@ class MoreInfoAlert2 extends LitElement {
     firstUpdated() {
         super.firstUpdated();
         // see https://lit.dev/docs/v1/components/lifecycle/#firstupdated
-        if (0) {
-            // could use connectedCallback to do this earlier
-            let s1 = this.shadowRoot.querySelector('ha-formfield#for-snooze ha-textfield');
-            this.textEl = s1;
-            this.textEl.validityTransform = (newValue, nativeValidity) => {
-                let isvalid = strIsValidNumber(newValue) != null;
-                return { valid: isvalid };
-            }
-        }
         customElements.whenDefined('state-card-alert2').then(()=>{
             this.requestUpdate();
         });
@@ -1672,14 +1689,7 @@ class MoreInfoAlert2 extends LitElement {
             notification_status = "snoozed until " + formatLogDate(idate);
         }
 
-        let is_snoozed = false;
-        if (this._currValue == NOTIFICATIONS_ENABLED ||
-            this._currValue == NOTIFICATIONS_DISABLED) {
-        } else if (this._currValue === undefined) {
-            // let is_snoozed stay false.  Will update once stateObj exists
-        } else {
-            is_snoozed = true;
-        }
+        let is_snoozed = this._currSelectorValue == NOTIFICATIONS_SNOOZED;
         const entName = stateObj.entity_id;
         const isAlert = 'last_on_time' in stateObj.attributes;
         let isAlertOn = false;
@@ -1781,13 +1791,13 @@ class MoreInfoAlert2 extends LitElement {
             }
         }
         let snoozeValidFunc = (newValue, nativeValidity) => {
-            return { valid: (strIsValidNumber(newValue) != null) };
+            return { valid: (strIsValidNumber(newValue) != false) };
         }
 
         // This is written so that it will stay live and update notification control status,
         // but will not change the notification control settings themselves,
         // so you don't get overrulled why trying to change settings.  This is done by
-        // having this._currValue only change due to user input, not changes to hass.
+        // having this._currSelectorValue and _currSnoozeValue only change due to user input, not changes to hass.
         return html`
          <div class="container" >
             <state-card-content
@@ -1816,40 +1826,51 @@ class MoreInfoAlert2 extends LitElement {
             <div style="margin-bottom: 0.3em;">Status: ${notification_status}</div>
             <div><ha-formfield .label=${"Enable"}>
                   <ha-radio
-                      .checked=${NOTIFICATIONS_ENABLED == this._currValue}
+                      .checked=${NOTIFICATIONS_ENABLED == this._currSelectorValue}
                       .value=${NOTIFICATIONS_ENABLED}
                       .disabled=${false}
-                      @change=${this._valueChanged}
+                      @change=${this._selectorValueChanged}
                       ></ha-radio></ha-formfield></div>
             <div><ha-formfield .label=${"Disable"}><ha-radio
-                  .checked=${NOTIFICATIONS_DISABLED == this._currValue}
+                  .checked=${NOTIFICATIONS_DISABLED == this._currSelectorValue}
                   .value=${NOTIFICATIONS_DISABLED}
                   .disabled=${false}
-                  @change=${this._valueChanged}
+                  @change=${this._selectorValueChanged}
                   ></ha-radio></ha-formfield></div>
-            <div style="margin-bottom:1em;"><ha-formfield id="for-snooze">
+            <div style="margin-bottom:2em;"><ha-formfield id="for-snooze">
                   <!-- if change structure of HTML here, update _aclick() -->
                   <ha-radio
                       id="rad1"
-                      .checked=${is_snoozed}
-                      .value=${"snooze"}
+                      .checked=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
+                      .value=${NOTIFICATIONS_SNOOZED}
                       .disabled=${false}
-                      @change=${this._valueChanged}
+                      @change=${this._selectorValueChanged}
                       ></ha-radio>
-                  <div style="display:inline-block;" id="slabel" @click=${this._aclick}>Snooze for 
-                      <ha-textfield
-                          .placeholder=${"1.234"}
-                          .min=${0}
-                          .disabled=${false}
-                          .required=${is_snoozed}
-                          .suffix=${"hours"}
-                          .validityTransform=${snoozeValidFunc}
-                         type="number"
-                         inputMode="decimal"
-                          autoValidate
-                          ?no-spinner=false
-                          @input=${this._handleInputChange}
-                          ></ha-textfield>
+                  <div style="display:flex; flex-direction: row; align-items:center;" id="slabel" @click=${this._aclick}>
+                      <div>Snooze for</div>
+                      <div style="margin-bottom: -3.3em;">
+                          <ha-textfield
+                              .placeholder=${"1.234"}
+                              .min=${0}
+                              .disabled=${false}
+                              .required=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
+                              .suffix=${"hours"}
+                              .validityTransform=${snoozeValidFunc}
+                             type="number"
+                             inputMode="decimal"
+                              autoValidate
+                              ?no-spinner=false
+                              @input=${this._handleInputChange}
+                              ></ha-textfield>
+                          <div style="display:flex;align-items:center;margin-top:-0.5em;">
+                              <ha-formfield>
+                                  <ha-checkbox .checked=${this._snooze_includes_ack}
+                                                @change=${this._snooze_ack_toggle} .label=${"happy"}
+                                                ></ha-checkbox>
+                                  <ha-formfield-label slot="label">Ack once now</ha-formfield-label>
+                              </ha-formfield>
+                          </div>
+                      </div>
                   </div>
               </ha-formfield>
             </div>
@@ -1900,36 +1921,38 @@ class MoreInfoAlert2 extends LitElement {
         }
       `;
 
-    _valueChanged(ev) {
+    _snooze_ack_toggle(ev) {
+        let isChecked = ev.target.checked;
+        this._snooze_includes_ack = isChecked;
+    }
+    _selectorValueChanged(ev) {
         let value = ev.detail?.value || ev.target.value;
-        if (value == "snooze") {
-            value = this.textEl.value;
-        }
-        this._currValue = value;
+        this._currSelectorValue = value;
     }
     _handleInputChange(ev) {
-        ev.stopPropagation();
+        //ev.stopPropagation();
         const value = ev.target.value;
-        this._currValue = value;
+        this._currSnoozeValue = value;
     }
     async _jupdate(ev) {
-        console.log('submit clicked', this._currValue, this);
+        console.log('submit clicked', this._currSelectorValue, this._currSnoozeValue, this._snooze_includes_ack);
         this._requestInProgress = true;
         let abutton = ev.target;
         let data = { };
-        if (this._currValue === undefined) {
+        if (this._currSelectorValue === undefined) {
             this._requestInProgress = false;
             abutton.actionError();
             showToast(this, "error: entity state not defiend yet");
             return;
         }
-        if (this._currValue == NOTIFICATIONS_ENABLED) {
+        if (this._currSelectorValue == NOTIFICATIONS_ENABLED) {
             data.enable = 'on';
-        } else if (this._currValue == NOTIFICATIONS_DISABLED) {
+        } else if (this._currSelectorValue == NOTIFICATIONS_DISABLED) {
             data.enable = 'off';
         } else {
-            let val = strIsValidNumber(this._currValue);
-            if (val == null) {
+            jasserteq(this._currSelectorValue, NOTIFICATIONS_SNOOZED);
+            let val = strIsValidNumber(this._currSnoozeValue);
+            if (val == false) {
                 this._requestInProgress = false;
                 abutton.actionError();
                 console.error('bad value', this._currValue);
@@ -1940,6 +1963,7 @@ class MoreInfoAlert2 extends LitElement {
             let hours = val;
             var newDate = new Date((new Date()).getTime() + hours*60*60*1000);
             data.snooze_until = newDate;
+            data.snooze_with_ack = this._snooze_includes_ack;
         }
         let stateObj = this.stateObj;
         try {
@@ -1985,21 +2009,7 @@ class MoreInfoAlert2 extends LitElement {
         abutton.actionSuccess();
     }
     _aclick(ev) {
-        let formEl = ev.target.parentElement;
-        let count = 2;
-        while (formEl.nodeName !== "HA-FORMFIELD" && (count-- > 0)) {
-            formEl = formEl.parentElement;
-        }
-        if (formEl.nodeName !== "HA-FORMFIELD") {
-            console.error("Could not find ha-formfield", formEl);
-        }
-        let radioEl = formEl.querySelector('ha-radio');
-        let textEl = formEl.querySelector('ha-textfield');
-        if (!radioEl || !textEl) {
-            console.error('could not find sub radio/textfield', radioEl, textEl);
-        }
-        radioEl.checked = true;
-        this._currValue = textEl.value;
+        this._currSelectorValue = NOTIFICATIONS_SNOOZED;
     }
 }
 
@@ -3087,7 +3097,7 @@ class Alert2EditDefaults extends LitElement {
                 Set defaults and parameters affecting all alerts. Click "Save" (at the bottom) when done.
                 <ul><li>Values set here override any values set in YAML
                <li>You can go to "Developer tools" -> YAML and click on "Alert2" to reload both YAML and UI Alert2 alerts with the new settings. <code>notifier_startup_grace_secs</code> and <code>defer_startup_notifications</code> require an HA restart.
-                <li>Click on any field name for brief help and see <a href="https://github.com/redstone99/hass-alert2">https://github.com/redstone99/hass-alert2</a> for more complete documentation on each field.
+                <li>Click on any field name for brief help and see <a href="https://github.com/redstone99/hass-alert2">https://github.com/redstone99/hass-alert2</a> for more complete documentation on each field.  Also useful may be <a href="https://github.com/redstone99/hass-alert2/blob/master/Recipes.md">Alert2 Recipes</a>
                 <li>Fields are generally interpreted as YAML, with some logic to add quotes if writing a template.
                 </ul>
             </div>
@@ -3138,6 +3148,11 @@ class Alert2EditDefaults extends LitElement {
                   @expand-click=${this.expandClick}
                  .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
                <div slot="help">${helpCommon.supersede_debounce_secs}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="data" type=${FieldTypes.STR}
+                 .defaultP=${this._topConfigs.rawYaml.defaults}
+                  @expand-click=${this.expandClick}
+                 .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
+               <div slot="help">${helpCommon.data}</div></alert2-cfg-field>
 
             <h3>Top-level options</h3>
             <alert2-cfg-field .hass=${this.hass} name="skip_internal_errors" type=${FieldTypes.BOOL}
@@ -3372,7 +3387,7 @@ class Alert2Create extends LitElement {
                 Create a new UI alert or edit an existing UI alert.
                 <li>This page can only modify alerts created via the UI. It will not affect any alerts in YAML. Alert2 does not allow any two alerts created via the UI or YAML to have the same domain and name.
                 <li>If using a generator, the "Render result" line for all fields will update based on the first element produced by the generator.
-                <li>See <a href="https://github.com/redstone99/hass-alert2">https://github.com/redstone99/hass-alert2</a> for more complete documentation on each field.
+                <li>See <a href="https://github.com/redstone99/hass-alert2">https://github.com/redstone99/hass-alert2</a> for more complete documentation on each field.  And see <a href="https://github.com/redstone99/hass-alert2/blob/master/Recipes.md">Alert2 Recipes</a> for examples.
                 <li>Fields are generally interpreted as YAML, with some logic to add quotes if writing a template.
                 </ul>
             </div>
@@ -3500,7 +3515,7 @@ class Alert2Create extends LitElement {
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.target}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="data" type=${FieldTypes.TEMPLATE}
-                 @expand-click=${this.expandClick} @change=${this._change}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.data}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="throttle_fires_per_mins" type=${FieldTypes.STR}
