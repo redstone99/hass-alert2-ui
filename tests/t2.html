@@ -105,8 +105,8 @@
              testDiv = document.querySelector('#testDiv');
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
-             if (0) {
-                 jassert(await startTest(doTestMoreInfo));
+             if (1) {
+                 jassert(await startTest(doTestColorConfig));
                  return;
              }
              jassert(await startTest(doTestDefaults));
@@ -1939,6 +1939,62 @@
              tEls = z.ao.shadowRoot.querySelectorAll('details > hui-alert2-entity-row');
              jasserteq(tEls.length, 0);
              z.ao.remove();
+         }
+         async function doTestColorConfig() {
+             let tEls;
+             let z;
+             let stateBadge;
+             const hrAgoMs = 60 * 60 * 1000;
+             
+             // test low priority color
+             z = await initTest('alert2-overview', {}, {low_priority_color: 'rgb(1, 1, 1)'});
+             await createExperiment(z, [ createState('n1', 1000, 7000, 20000),
+                                         createState('n2', 3000, 7000, 20000, {priority: 'medium'}),
+                                         createState('n3', 5000, 7000, 2000), // acked
+             ], ['n2', 'n1', 'n3'], nBelow=1);
+             tEls = z.ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
+             stateBadge = tEls[1].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 1)');
+             // Low pri color should not apply to medium pri alert
+             stateBadge = tEls[0].shadowRoot.querySelector('state-badge');
+             jassert(getComputedStyle(stateBadge).color != 'rgb(1, 1, 1)');
+             // low pri should apply to acked low pri alert
+             stateBadge = tEls[1].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 1)');
+             z.ao.remove();
+
+             // test medium/high priority color
+             z = await initTest('alert2-overview', {}, {medium_priority_color: 'rgb(1, 1, 2)',
+                                                        high_priority_color: 'rgb(1, 1, 3)'      });
+             await createExperiment(z, [ createState('n1', 1000, 7000, 20000, {priority: 'high'}),
+                                         createState('n2', 3000, 7000, 20000, {priority: 'medium'}),
+                                         createState('n3', 5000, 7000, 2000, {priority: 'medium'}), // acked
+                                         createState('n4', 8000, 7200, 20000, {priority: 'medium'}), // off
+                                         createState('n5', 8000, 7000, 2000, {priority: 'medium'}), // off & acked
+             ], ['n1', 'n2', 'n4','n3', 'n5'], nBelow=2);
+             tEls = z.ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
+             stateBadge = tEls[0].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 3)');
+             stateBadge = tEls[1].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 2)');
+             stateBadge = tEls[2].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 2)');
+             stateBadge = tEls[3].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 2)');
+             z.ao.remove();
+
+             z = await initTest('alert2-overview', {}, {medium_priority_color: 'rgb(1, 1, 4)',
+                                                        off_color: 'rgb(1, 1, 5)'      });
+             await createExperiment(z, [ createState('n1', 1000, 7000, 20000, {priority: 'medium'}),
+                                         createState('n2', 8000, 7000, 20000, {priority: 'medium'}), // off
+                                         createState('n3', 5000, 7000, 2000, {priority: 'medium'}), // acked
+                                         createState('n4', 8000, 7000, 2000, {priority: 'medium'}), // off & acked
+             ], ['n1', 'n2', 'n4','n3'], nBelow=2);
+             tEls = z.ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
+             stateBadge = tEls[0].shadowRoot.querySelector('state-badge');
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 3)');
+             
+             
          }
          async function doTestSupersedeMgr() {
              let alert2Tools = customElements.get('alert2-tools');
