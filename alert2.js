@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.14  (internal 80)';
+const VERSION = 'v1.14.1  (internal 82)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -1963,7 +1963,7 @@ class MoreInfoAlert2 extends LitElement {
             let hours = val;
             var newDate = new Date((new Date()).getTime() + hours*60*60*1000);
             data.snooze_until = newDate;
-            data.snooze_with_ack = this._snooze_includes_ack;
+            data.ack_at_snooze_start = this._snooze_includes_ack;
         }
         let stateObj = this.stateObj;
         try {
