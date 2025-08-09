@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.14.1  (internal 83)';
+const VERSION = 'v1.14.1  (internal 84)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -677,7 +677,7 @@ class Alert2Overview extends LitElement {
                 medium_priority_color: this._config?.medium_priority_color,
                 high_priority_color: this._config?.high_priority_color,
                 off_color: this._config?.off_color,
-                unacked_off_color: this._config?.unacked_off_color,
+                //unacked_off_color: this._config?.unacked_off_color,
             };
             if (dispInfo.isSuperseded) {
                 element.classList.add('superseded');
@@ -936,7 +936,8 @@ class Alert2Overview extends LitElement {
                     isAcked = true;  // treat snoozed or disabled alerts as already acked
                 }
                 //console.log('considering ', entityName, testMs);
-                const includeOldUnacked = this._config && isTruthy(this._config.include_old_unacked);
+                const includeOldUnacked = (this._config && isTruthy(this._config.include_old_unacked)) ||
+                      ent.attributes.ack_required;
                 // Check testMs so we ignore alerts that have never fired
                 const isOldUnacked = !isAcked && testMs > 0;
                 if (isOn || (isOldUnacked && includeOldUnacked) || intervalStartMs < testMs || not_enabled) {
@@ -1201,47 +1202,40 @@ class Alert2EntityRow extends LitElement  {
         let stateClass = 'pointer';
         if (this._isSuperseded) {  stateClass += ' superseded'; }
         const priority = this._config ? this._config.priority : 'low';
+        
         if (priority == 'low') {  stateClass += ' lowpri'; }
         if (priority == 'medium') {  stateClass += ' mediumpri'; }
         if (priority == 'high') {  stateClass += ' highpri'; }
         let badgeStyle = '';
+        let customColor = 'grey';
         if (this._colorConfig) {
             const isAcked = stateObj.attributes['is_acked'];
             const isConditionAlert = 'last_on_time' in stateObj.attributes;
             const isOn = stateObj.state === 'on';
-            const notificationControl = stateObj.attributes.notification_control;
-            const isSnoozedOrDisabled = notificationControl && notificationControl !== 'enabled';
-            const shouldUseSnoozedOffColor = this._colorConfig.snoozed_disabled_use_off_color && isTruthy(this._colorConfig.snoozed_disabled_use_off_color);
-            let customColor = null;
-            if ((isOn && isConditionAlert) || (!isConditionAlert && !isAcked)) {
-                // "on" condition alerts OR unacked trigger alerts: use priority colors
-                if (isSnoozedOrDisabled && shouldUseSnoozedOffColor && this._colorConfig.off_color) {
-                    customColor = this._colorConfig.off_color;
-                } else if (priority === 'low' && this._colorConfig.low_priority_color) {
-                    customColor = this._colorConfig.low_priority_color;
-                } else if (priority === 'medium' && this._colorConfig.medium_priority_color) {
-                    customColor = this._colorConfig.medium_priority_color;
-                } else if (priority === 'high' && this._colorConfig.high_priority_color) {
-                    customColor = this._colorConfig.high_priority_color;
+            //const notificationControl = stateObj.attributes.notification_control;
+            //const isSnoozedOrDisabled = notificationControl && notificationControl !== 'enabled';
+            //const shouldUseSnoozedOffColor = this._colorConfig.snoozed_disabled_use_off_color && isTruthy(this._colorConfig.snoozed_disabled_use_off_color);
+            
+            // Use priority coloring is condition alert is firing or if ack is missing from ack_required alert.
+            // For event alerts show priority coloring is not acked. So it's like event alerts force ack_required to be true.
+            console.log('considering alert', stateObj.entity_id, stateObj.attributes);
+            const isPriorityColored = (isConditionAlert && isOn) || (stateObj.attributes.ack_required && !isAcked) ||
+                  (!isConditionAlert && !isAcked);
+            if (isPriorityColored) {
+                if (priority === 'low') {
+                    customColor = this._colorConfig.low_priority_color ? this._colorConfig.low_priority_color : 'blue';
+                } else if (priority === 'medium') {
+                    customColor = this._colorConfig.medium_priority_color ? this._colorConfig.medium_priority_color : 'orange';
+                } else if (priority === 'high') {
+                    customColor = this._colorConfig.high_priority_color ? this._colorConfig.high_priority_color : 'red';
+                } else {
+                    console.error(`Unrecognized priority=${priority} for entity ${stateObj.entity_id}`);
                 }
             } else {
-                // "off" condition alerts OR acked trigger alerts
-                if (isSnoozedOrDisabled && shouldUseSnoozedOffColor && this._colorConfig.off_color) {
-                    // Snoozed or disabled alerts use off_color when config option is enabled
-                    customColor = this._colorConfig.off_color;
-                } else if (isAcked && this._colorConfig.off_color) {
-                    // Acked condition alerts (off) or acked trigger alerts
-                    customColor = this._colorConfig.off_color;
-                } else if (!isAcked && this._colorConfig.unacked_off_color) {
-                    // Unacked "off" condition alerts only (trigger alerts handled above)
-                    customColor = this._colorConfig.unacked_off_color;
-                }
-            }
-            if (customColor) {
-                console.log(`setting badgeStyle to ${customColor}`);
-                badgeStyle = `color: ${customColor} !important;`;
+                customColor = this._colorConfig.off_color ? this._colorConfig.off_color : 'grey';
             }
         }
+        badgeStyle = `color: ${customColor} !important;`;
 
         return html`
         <div class="mainrow">
@@ -1315,8 +1309,8 @@ class Alert2EntityRow extends LitElement  {
          visibility: hidden;
       }
       state-badge.lowpri { }
-      state-badge.mediumpri { color: orange; }
-      state-badge.highpri { color: red; }
+      state-badge.mediumpri { }
+      state-badge.highpri { }
     `;
 }
 
@@ -3001,10 +2995,23 @@ let helpCommon = {
                        <div>String</div><div class="exval"><code>Temperature low</code><div class="bigor">or</div><code>"Temperature low"</code></div>
                        <div>Template</div><div class="exval"><code>Temperature is {{ states('sensor.temp') }}</code></div>
                   </div>`,
-    reminder_message: html`Message to send to remind that a condition alert is still on. Variables availble are on_secs and on_time_str. Default message is "on for {{ on_time_str }}". Can be:
+    reminder_message: html`Message to send to remind that a condition alert is still on. Variables available are on_secs and on_time_str. Default message is "on for {{ on_time_str }}". Can be:
                   <div class="extable">
                        <div>String</div><div class="exval"><code>is still on</code></div>
                        <div>Template</div><div class="exval"><code>is still on. Temperature is {{ states('sensor.temp') }}</code></div>
+                  </div>`,
+    ack_reminder_message: html`Message to send to remind that an alert has not yet been acked. Default message is "not acked yet". Can be:
+                  <div class="extable">
+                       <div>String</div><div class="exval"><code>has not been acked yet</code></div>
+                       <div>Template</div><div class="exval"><code>not acked yet. Temperature is {{ states('sensor.temp') }}</code></div>
+                  </div>`,
+    ack_required: html`If true, reminders will be sent that an alert has not yet been acked. Can be:
+                  <div class="extable">
+                         <div>Truthy (true/yes/on/1 or opposites)</div><div class="exval"><code>true</code></div>
+                  </div>`,
+    ack_reminders_only: html`If true, an acked alert will still send a notification when the alert stops firing. If false, an acked alert will not send a notification when the alert stops firing. Can be:
+                  <div class="extable">
+                         <div>Truthy (true/yes/on/1 or opposites)</div><div class="exval"><code>true</code></div>
                   </div>`,
     display_msg: html`Text to display in Alert2 Overview UI card when alert is displayed there. HTML is accepted. Can be:
                   <div class="extable">
@@ -3396,20 +3403,20 @@ class Alert2Create extends LitElement {
         yaml += '\n  alerts:';
         let isFirst = true;
         Object.keys(this.alertCfg).forEach((fname)=> {
-            yaml += `\n   ${isFirst ? "- " : "  "}`;
+            yaml += `\n    ${isFirst ? "- " : "  "}`;
             isFirst = false;
             if (fname === 'threshold') {
                 yaml += 'threshold:';
                 Object.keys(this.alertCfg[fname]).forEach((fname2)=> {
-                    yaml += `\n      ${fname2}: ${yamlEscape(this.alertCfg[fname][fname2])}`;
+                    yaml += `\n        ${fname2}: ${yamlEscape(this.alertCfg[fname][fname2])}`;
                 });
             } else {
                 let rawVal = this.alertCfg[fname].trim();
                 let val;
                 if (['domain','name', 'friendly_name', 'condition', 'condition_on', 'condition_off', 'message',
                      'title', 'target',
-                     'annotate_messages', 'early_start', 'generator_name', 'manual_on', 'manual_off',
-                     'done_message', 'reminder_message', 'supersede_debounce_secs', 'display_msg', 'delay_on_secs',
+                     'annotate_messages', 'ack_required', 'ack_reminders_only', 'early_start', 'generator_name', 'manual_on', 'manual_off',
+                     'done_message', 'reminder_message', 'ack_reminder_message', 'supersede_debounce_secs', 'display_msg', 'delay_on_secs',
                      'priority','icon'].includes(fname)) {
                     val = yamlEscape(rawVal);
                 } else if (['trigger', 'trigger_on', 'trigger_off', 'data', 'throttle_fires_per_mins',
@@ -3425,8 +3432,10 @@ class Alert2Create extends LitElement {
                     }
                 }
                 if (['trigger', 'trigger_on', 'trigger_off', 'data'].includes(fname)) {
-                    val = val.replace('\n', '\n      ');
-                    yaml += `${fname}:\n      ${val}`;
+                    if (fname == 'data') { console.log('data was', val); }
+                    val = val.replaceAll('\n', '\n        ');
+                    if (fname == 'data') { console.log('data now is ', val); }
+                    yaml += `${fname}:\n        ${val}`;
                 } else {
                     yaml += `${fname}: ${val}`;
                 }
@@ -3459,7 +3468,10 @@ class Alert2Create extends LitElement {
                 }
             }
         }
-        
+        const localDefaults = {
+            ack_required: false,
+            ack_reminders_only: false
+        };
         return html`
          <div class="container">
          <div class="ifields">
@@ -3571,6 +3583,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.reminder_message}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="ack_reminder_message" type=${FieldTypes.TEMPLATE}
+                 @expand-click=${this.expandClick} @change=${this._change}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.ack_reminder_message}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="notifier" type=${FieldTypes.TEMPLATE}
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   templateType=${TemplateTypes.LIST} .genResult=${this._generatorResult}
@@ -3586,6 +3602,14 @@ class Alert2Create extends LitElement {
                   templateType=${TemplateTypes.LIST} .genResult=${this._generatorResult}
                   .savedP=${{}} .currP=${this.alertCfg} >
                <div slot="help">${helpCommon.done_notifier}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="ack_required" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${localDefaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.ack_required}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="ack_reminders_only" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${localDefaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.ack_reminders_only}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="title" type=${FieldTypes.TEMPLATE}
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >

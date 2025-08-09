@@ -180,9 +180,24 @@
                  };
          }
          function createState(name, onAgoMs, offAgoMs, ackAgoMs, dopts = {}) {
-             let opts = { priority: 'low', supersedes: null };
+             let opts = { priority: 'low', ack_required: false };
              Object.assign(opts, dopts);
              jasserteq(typeof(opts.priority), 'string');
+             if (offAgoMs === null) {
+                 let obj = { state: getRecentIso(onAgoMs),
+                             attributes: { 'notification_control': NOTIFICATIONS_ENABLED,
+                                           'last_ack_time': getRecentIso(ackAgoMs),
+                                           'is_acked': ackAgoMs < onAgoMs,
+                                           'fires_since_last_notify': 0,
+                                           'last_fired_time': getRecentIso(onAgoMs),
+                                           'priority': opts.priority,
+                                           'ack_required': opts.ack_required,
+                                           domain: 'd',
+                                           name: name,
+                             },
+                             entity_id: 'alert2.d_'+name };
+                 return obj;
+             }
              let obj = { state: (onAgoMs && onAgoMs < offAgoMs) ? 'on' : 'off',
                          attributes: { 'last_on_time': getRecentIso(onAgoMs),
                                        'last_off_time': getRecentIso(offAgoMs),
@@ -190,7 +205,9 @@
                                        'last_ack_time': getRecentIso(ackAgoMs),
                                        'is_acked': ackAgoMs < onAgoMs,
                                        'fires_since_last_notify': 0,
+                                       'last_fired_time': getRecentIso(onAgoMs),
                                        'priority': opts.priority,
+                                       'ack_required': opts.ack_required,
                                        domain: 'd',
                                        name: name,
                          },
@@ -943,6 +960,14 @@
              await z.setField('reminder_message', '');
              await z.checkField('reminder_message', null);
 
+             // ack_reminder_message
+             await z.setField('ack_reminder_message', 'yay');
+             await z.checkRender('ack_reminder_message', /result:"yay"/);
+             await z.setField('ack_reminder_message', '{{"a"+"b"}}');
+             await z.checkRender('ack_reminder_message', /result:"ab"/);
+             await z.setField('ack_reminder_message', '');
+             await z.checkField('ack_reminder_message', null);
+
              // notifier
              await z.setField('notifier', 'yay');
              await z.checkRender('notifier', /result \(len=1\):\["yay"\]/);
@@ -1052,6 +1077,18 @@
              await z.checkRender('annotate_messages', /result:false/);
              await z.setField('annotate_messages', '');
              await z.checkField('annotate_messages', null);
+
+             // ack_reminders_only
+             await z.setField('ack_reminders_only', 'off');
+             await z.checkRender('ack_reminders_only', /result:false/);
+             await z.setField('ack_reminders_only', '');
+             await z.checkField('ack_reminders_only', null);
+
+             // ack_required
+             await z.setField('ack_required', 'off');
+             await z.checkRender('ack_required', /result:false/);
+             await z.setField('ack_required', '');
+             await z.checkField('ack_required', null);
 
              // supersedes
              await z.setField('supersedes', '{ domain: d, name: n2 }');
@@ -1454,6 +1491,7 @@
              z.checkDefault('message', null);
              z.checkDefault('done_message', null);
              z.checkDefault('reminder_message', null);
+             z.checkDefault('ack_reminder_message', null);
              z.checkDefault('notifier', /empty: "happy"/);
              z.checkDefault('summary_notifier', /empty: false/);
              z.checkDefault('done_notifier', /empty: true/);
@@ -1466,6 +1504,9 @@
              z.checkDefault('reminder_frequency_mins', /empty: 3/);
              z.checkDefault('supersede_debounce_secs', /empty: 0.5/);
              z.checkDefault('annotate_messages', /empty: "yes"/);
+             z.checkDefault('ack_required', /empty: false/);
+             z.checkDefault('ack_reminders_only', /empty: false/);
+
              z.checkDefault('generator', null);
              z.checkDefault('generator_name', null);
              z.ao.remove();
@@ -1965,22 +2006,36 @@
 
              // test medium/high priority color
              z = await initTest('alert2-overview', {}, {medium_priority_color: 'rgb(1, 1, 2)',
-                                                        high_priority_color: 'rgb(1, 1, 3)'      });
+                                                        high_priority_color: 'rgb(1, 1, 3)',
+                                                        off_color: 'rgb(1,1,4)',
+             });
              await createExperiment(z, [ createState('n1', 1000, 7000, 20000, {priority: 'high'}),
                                          createState('n2', 3000, 7000, 20000, {priority: 'medium'}),
+                                         createState('n2a', 3200, 7000, 20000, {priority: 'medium', ack_required: true}),
                                          createState('n3', 5000, 7000, 2000, {priority: 'medium'}), // acked
+                                         createState('n3a', 5200, 7000, 2000, {priority: 'medium', ack_required: true}), // acked
                                          createState('n4', 8000, 7200, 20000, {priority: 'medium'}), // off
+                                         createState('n4a', 8000, 7300, 20000, {priority: 'medium', ack_required: true}), // off
                                          createState('n5', 8000, 7000, 2000, {priority: 'medium'}), // off & acked
-             ], ['n1', 'n2', 'n4','n3', 'n5'], nBelow=2);
+                                         createState('n5a', 8000, 7400, 2000, {priority: 'medium', ack_required: true}), // off & acked
+                                         createState('n6', 6* hrAgoMs, 5* hrAgoMs, 20* hrAgoMs, {priority: 'medium'}),
+                                         createState('n6a', 6* hrAgoMs, 5* hrAgoMs, 20* hrAgoMs, {priority: 'medium', ack_required: true}),
+             ], ['n1', 'n2', 'n2a', 'n4', 'n4a', 'n6a', 'n3', 'n3a', 'n5', 'n5a'], nBelow=4);
              tEls = z.ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
-             stateBadge = tEls[0].shadowRoot.querySelector('state-badge');
-             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 3)');
-             stateBadge = tEls[1].shadowRoot.querySelector('state-badge');
-             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 2)');
-             stateBadge = tEls[2].shadowRoot.querySelector('state-badge');
-             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 2)');
-             stateBadge = tEls[3].shadowRoot.querySelector('state-badge');
-             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 2)');
+             let tt = function(tEls, anum, acol) {
+                 stateBadge = tEls[anum].shadowRoot.querySelector('state-badge');
+                 jasserteq(getComputedStyle(stateBadge).color, acol);
+             }
+             tt(tEls, 0, 'rgb(1, 1, 3)'); // n1
+             tt(tEls, 1, 'rgb(1, 1, 2)'); // n2
+             tt(tEls, 2, 'rgb(1, 1, 2)'); // n2a
+             tt(tEls, 3, 'rgb(1, 1, 4)'); // n4
+             tt(tEls, 4, 'rgb(1, 1, 2)'); // n4a
+             tt(tEls, 5, 'rgb(1, 1, 2)'); // n6a
+             tt(tEls, 6, 'rgb(1, 1, 2)'); // n3
+             tt(tEls, 7, 'rgb(1, 1, 2)'); // n3a
+             tt(tEls, 8, 'rgb(1, 1, 4)'); // n5
+             tt(tEls, 9, 'rgb(1, 1, 4)'); // n5a
              z.ao.remove();
 
              z = await initTest('alert2-overview', {}, {medium_priority_color: 'rgb(1, 1, 4)',
@@ -1989,12 +2044,29 @@
                                          createState('n2', 8000, 7000, 20000, {priority: 'medium'}), // off
                                          createState('n3', 5000, 7000, 2000, {priority: 'medium'}), // acked
                                          createState('n4', 8000, 7000, 2000, {priority: 'medium'}), // off & acked
-             ], ['n1', 'n2', 'n4','n3'], nBelow=2);
+             ], ['n1', 'n2', 'n3','n4'], nBelow=2);
              tEls = z.ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
              stateBadge = tEls[0].shadowRoot.querySelector('state-badge');
-             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 3)');
-             
-             
+             jasserteq(getComputedStyle(stateBadge).color, 'rgb(1, 1, 4)');
+             z.ao.remove();
+
+             // Event alerts
+             z = await initTest('alert2-overview', {}, {medium_priority_color: 'rgb(1, 1, 4)',
+                                                        off_color: 'rgb(1, 1, 5)'      });
+             await createExperiment(z, [ createState('n1', 1000, null, 20000, {priority: 'medium'}), // event
+                                         createState('n2', 8000, null, 7000, {priority: 'medium'}), // acked event
+                                         createState('n2a', 8000, null, 7200, {priority: 'medium', ack_required:true}), // acked event
+                                         createState('n3a', 2000, null, 20000, {priority: 'medium', ack_required:true}), // unacked event
+                                         createState('n4', 6* hrAgoMs, null, 20* hrAgoMs, {priority: 'medium'}),
+                                         createState('n4a', 6* hrAgoMs, null, 20* hrAgoMs, {priority: 'medium', ack_required: true}),
+             ], ['n1', 'n3a', 'n4a','n2', 'n2a'], nBelow=2);
+             tEls = z.ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
+             tt(tEls, 0, 'rgb(1, 1, 4)'); // n1
+             tt(tEls, 1, 'rgb(1, 1, 4)'); // n3a
+             tt(tEls, 2, 'rgb(1, 1, 4)'); // n4a
+             tt(tEls, 3, 'rgb(1, 1, 5)'); // n2
+             tt(tEls, 4, 'rgb(1, 1, 5)'); // n2a
+             z.ao.remove();
          }
          async function doTestSupersedeMgr() {
              let alert2Tools = customElements.get('alert2-tools');
