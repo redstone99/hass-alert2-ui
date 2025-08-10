@@ -1238,7 +1238,7 @@ class Alert2EntityRow extends LitElement  {
                 customColor = this._colorConfig.off_color ? this._colorConfig.off_color : 'grey';
             }
         }
-        badgeStyle = `color: ${customColor} !important;`;
+        badgeStyle = `color: ${customColor};`;
 
         return html`
         <div class="mainrow">

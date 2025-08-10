@@ -151,7 +151,7 @@ The Overview card supports a few configuration options:
 | Name | Description |
 |---|---|
 | `title` | Text to display at top of Overview card. Defaults to "Alerts" |
-| `include_old_unacked` | A boolean incidating whether to always show unacked alerts, even if they have fallen out of the display time window.  Can be truthy string values like "true", "on", "yes", or the opposites. Defaults to false. |
+| `include_old_unacked` | (SEMI-DEPRECATED - you probably want to use the new `ack_required` field in your alert config.) A boolean incidating whether to always show unacked alerts, even if they have fallen out of the display time window.  Can be truthy string values like "true", "on", "yes", or the opposites. Defaults to false. |
 | `filter_entity_id` |  A glob or regex filter that restricts the candidate set of Alert2 entities to be displayed. A glob is a string with \* in it at least once.  A regex is a string that begins and ends with "/". Defaults to "*" (i.e., do not exclude any entities) |
 | `hide_superseded` | When truthy (string values like "true", "on", or "yes"), do not display in the Overview card any alert that is superseded by a currently firing alert. |
 | `low_priority_color` | A string representing the CSS color value used for the badge of low-priority alerts. Default is "blue". |
