@@ -124,7 +124,9 @@ The install process above downloaded a js module, `alert2.js`.
 
 The `alert2-overview` Lovelace card lists recently active Alert2 alerts, as well as snoozed or disabled alerts.  A slider at the top of the card controls the time window covered.
 
-Each line shows the status of the alert, including when it last fired, how many times it fired since the last notification, and whether it has been ack'ed, snoozed or disabled.  Each alert will show an "ACK" button if it hasn't been acked already. The badge shown at the left of the alert will be colored orange or red if alert priority is set to "medium" or "high", respectively.
+Each line shows the status of the alert, including when it last fired, how many times it fired since the last notification, and whether it has been ack'ed, snoozed or disabled.  Each alert will show an "ACK" button if it hasn't been acked already.
+
+The badge shown at the left of the alert will be colored based on priority and status. A condition alert that is on, or a condition alert that has not yet been acked and `ack_required` was set, or an event alert that has not yet been acked will be colored based on priority. The default is blue for low, orange for medium and red for high.  Otherwise the badge will be grey.  These colors may be customized (see "Config", below).
 
 The button "ACK ALL" will ack all alerts, not just the ones displayed.
 
@@ -152,6 +154,10 @@ The Overview card supports a few configuration options:
 | `include_old_unacked` | A boolean incidating whether to always show unacked alerts, even if they have fallen out of the display time window.  Can be truthy string values like "true", "on", "yes", or the opposites. Defaults to false. |
 | `filter_entity_id` |  A glob or regex filter that restricts the candidate set of Alert2 entities to be displayed. A glob is a string with \* in it at least once.  A regex is a string that begins and ends with "/". Defaults to "*" (i.e., do not exclude any entities) |
 | `hide_superseded` | When truthy (string values like "true", "on", or "yes"), do not display in the Overview card any alert that is superseded by a currently firing alert. |
+| `low_priority_color` | A string representing the CSS color value used for the badge of low-priority alerts. Default is "blue". |
+| `medium_priority_color` | A string representing the CSS color value used for the badge of medium-priority alerts. Default is "orange". |
+| `high_priority_color` | A string representing the CSS color value used for the badge of high-priority alerts. Default is "red". |
+| `off_color` | A string representing the CSS color value used for the badge of alerts that are off or have been acked. Default is "grey". |
 
 Example Lovelace YAML config:
 

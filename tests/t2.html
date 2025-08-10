@@ -105,7 +105,7 @@
              testDiv = document.querySelector('#testDiv');
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
-             if (1) {
+             if (0) {
                  jassert(await startTest(doTestColorConfig));
                  return;
              }
@@ -123,6 +123,7 @@
              jassert(await startTest(doTestSupersedeMgr));
              jassert(await startTest(doTestInternal));
              jassert(await startTest(doTestMoreInfo));
+             jassert(await startTest(doTestColorConfig));
              let testStatusEl = document.querySelector('#testStatus');
              if (jassertFailCount == 0) {
                  testStatusEl.innerHTML = `Test: All done`;

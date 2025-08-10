@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.14.1  (internal 84)';
+const VERSION = 'v1.15  (internal 85)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -332,10 +332,12 @@ function isTruthy(aval) {
     }
     return false;
 }
-// Validate if a value can be processed by isTruthy function
-function isValidBooleanValue(value) {
-    const validTypes = ['boolean', 'number', 'string'];
-    return validTypes.includes(typeof value);
+if (0) {
+    // Validate if a value can be processed by isTruthy function
+    function isValidBooleanValue(value) {
+        const validTypes = ['boolean', 'number', 'string'];
+        return validTypes.includes(typeof value);
+    }
 }
 
 function popupMoreinfo(hass, element, entityName) {
@@ -488,7 +490,7 @@ class Alert2Overview extends LitElement {
                 this._configError = `Config field filter_entity_id must be a string, not of type ${typeof this._config.filter_entity_id}`;
             }
             // Validate color configs
-            const colorFields = ['low_priority_color', 'medium_priority_color', 'high_priority_color', 'off_color', 'unacked_off_color'];
+            const colorFields = ['low_priority_color', 'medium_priority_color', 'high_priority_color', 'off_color'];
             for (const colorField of colorFields) {
                 if (Object.hasOwn(this._config, colorField)) {
                     const colorValue = this._config[colorField];
@@ -498,16 +500,18 @@ class Alert2Overview extends LitElement {
                     }
                 }
             }
-            // Validate boolean-like config fields
-            const booleanFields = ['snoozed_disabled_use_off_color'];
-            for (const boolField of booleanFields) {
-                if (Object.hasOwn(this._config, boolField)) {
-                    const value = this._config[boolField];
+            if (0) {
+                // Validate boolean-like config fields
+                const booleanFields = ['snoozed_disabled_use_off_color'];
+                for (const boolField of booleanFields) {
+                    if (Object.hasOwn(this._config, boolField)) {
+                        const value = this._config[boolField];
 
-                    // Check if value is a valid boolean-like type
-                    if (!this.isValidBooleanValue(value)) {
-                        this._configError = `Config field ${boolField} must be a boolean, number, or string (got ${typeof value}: ${JSON.stringify(value)})`;
-                        break;
+                        // Check if value is a valid boolean-like type
+                        if (!this.isValidBooleanValue(value)) {
+                            this._configError = `Config field ${boolField} must be a boolean, number, or string (got ${typeof value}: ${JSON.stringify(value)})`;
+                            break;
+                        }
                     }
                 }
             }
@@ -1218,7 +1222,6 @@ class Alert2EntityRow extends LitElement  {
             
             // Use priority coloring is condition alert is firing or if ack is missing from ack_required alert.
             // For event alerts show priority coloring is not acked. So it's like event alerts force ack_required to be true.
-            console.log('considering alert', stateObj.entity_id, stateObj.attributes);
             const isPriorityColored = (isConditionAlert && isOn) || (stateObj.attributes.ack_required && !isAcked) ||
                   (!isConditionAlert && !isAcked);
             if (isPriorityColored) {
@@ -3432,9 +3435,7 @@ class Alert2Create extends LitElement {
                     }
                 }
                 if (['trigger', 'trigger_on', 'trigger_off', 'data'].includes(fname)) {
-                    if (fname == 'data') { console.log('data was', val); }
                     val = val.replaceAll('\n', '\n        ');
-                    if (fname == 'data') { console.log('data now is ', val); }
                     yaml += `${fname}:\n        ${val}`;
                 } else {
                     yaml += `${fname}: ${val}`;
@@ -3496,6 +3497,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.friendly_name}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="icon" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.icon}</div></alert2-cfg-field>
 
             <h3>Fire control</h3>
             <alert2-cfg-field .hass=${this.hass} name="condition" type=${FieldTypes.TEMPLATE}
@@ -3522,6 +3527,14 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.trigger_off}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="manual_on" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.manual_on}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="manual_off" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.manual_off}</div></alert2-cfg-field>
             <div><span style="visibility:hidden">*</span>Threshold <div style="margin-left: 1.5em;">
                <alert2-cfg-field .hass=${this.hass} name="value" type=${FieldTypes.TEMPLATE}
                     @expand-click=${this.expandClick} @change=${this._change} namePrefix="threshold"
@@ -3549,26 +3562,6 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.early_start}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="manual_on" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.manual_on}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="manual_off" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.manual_off}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="supersedes" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.supersedes}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="priority" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.priority}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="icon" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.icon}</div></alert2-cfg-field>
 
             <h3>Notifications</h3>
             <alert2-cfg-field .hass=${this.hass} name="message" type=${FieldTypes.TEMPLATE}
@@ -3602,6 +3595,14 @@ class Alert2Create extends LitElement {
                   templateType=${TemplateTypes.LIST} .genResult=${this._generatorResult}
                   .savedP=${{}} .currP=${this.alertCfg} >
                <div slot="help">${helpCommon.done_notifier}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="reminder_frequency_mins" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.reminder_frequency_mins}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="annotate_messages" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.annotate_messages}</div></alert2-cfg-field>
             <alert2-cfg-field .hass=${this.hass} name="ack_required" type=${FieldTypes.STR}
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${localDefaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
@@ -3626,24 +3627,6 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${throttle_defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.throttle_fires_per_mins}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="reminder_frequency_mins" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.reminder_frequency_mins}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="annotate_messages" type=${FieldTypes.STR}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.annotate_messages}</div></alert2-cfg-field>
-            <alert2-cfg-field .hass=${this.hass} name="supersede_debounce_secs" type=${FieldTypes.FLOAT}
-                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.supersede_debounce_secs}</div></alert2-cfg-field>
-
-            <alert2-cfg-field .hass=${this.hass} name="display_msg" type=${FieldTypes.TEMPLATE}
-                 @expand-click=${this.expandClick} @change=${this._change}
-                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
-               <div slot="help">${helpCommon.display_msg}</div></alert2-cfg-field>
-
 
             <h3>Generator</h3>
             <alert2-cfg-field .hass=${this.hass} name="generator" type=${FieldTypes.TEMPLATE}
@@ -3655,6 +3638,26 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change}
                   .savedP=${{}} .currP=${this.alertCfg} >
                <div slot="help">${helpCommon.generator_name}</div></alert2-cfg-field>
+
+            <h3>Extra settings</h3>
+            <alert2-cfg-field .hass=${this.hass} name="priority" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.priority}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="display_msg" type=${FieldTypes.TEMPLATE}
+                 @expand-click=${this.expandClick} @change=${this._change}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.display_msg}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="supersedes" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.supersedes}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="supersede_debounce_secs" type=${FieldTypes.FLOAT}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.supersede_debounce_secs}</div></alert2-cfg-field>
+
+
           </div>
           <div class="doutput">
             <h3>Output</h3>
