@@ -895,7 +895,7 @@
              await z.setField('hysteresis', '3');
              await z.checkRender('hysteresis', /result:3/);
              await z.setField('hysteresis', '-3');
-             await z.checkRender('hysteresis', /value must be at least/, hasErr=true);
+             await z.checkRender('hysteresis', /float must be > 0/, hasErr=true);
              await z.setField('hysteresis', '');
              await z.checkField('hysteresis', null);
              

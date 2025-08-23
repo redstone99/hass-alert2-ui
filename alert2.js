@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.15  (internal 85)';
+const VERSION = 'v1.16  (internal 86)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2958,14 +2958,20 @@ let helpCommon = {
     hysteresis: html`Compare <code>value</code> to limits using hysteresis. Threshold is considered exceeded if value exceeds min/max, but does not reset until value increases past min+hysteresis or decreases past max-hysteresis. Can be:
                   <div class="extable">
                        <div>Float</div><div class="exval"><code>4.2</code></div>
+                       <div>Entity name</div><div class="exval"><code>input_number.temp_leeway</code></div>
+                       <div>Template</div><div class="exval"><code>{{ states('sensor.foo') }}</code></div>
                   </div>`,
     maximum: html`Alert fires if <code>value</code> is above maximum. Can be:
                   <div class="extable">
                        <div>Float</div><div class="exval"><code>30</code></div>
+                       <div>Entity name</div><div class="exval"><code>input_number.temp_max</code></div>
+                       <div>Template</div><div class="exval"><code>{{ states('sensor.foo') }}</code></div>
                   </div>`,
     minimum: html`Alert fires if <code>value</code> is below minimum. Can be:
                   <div class="extable">
                        <div>Float</div><div class="exval"><code>-2</code></div>
+                       <div>Entity name</div><div class="exval"><code>input_number.temp_min</code></div>
+                       <div>Template</div><div class="exval"><code>{{ states('sensor.foo') }}</code></div>
                   </div>`,
     delay_on_secs: html`Number of seconds that any condition must be true and any threshold specified must be exceeded before the alert starts firing. Can be:
                   <div class="extable">
@@ -3032,7 +3038,7 @@ let helpCommon = {
                        <div>String</div><div class="exval"><code>foo bar</code></div>
                        <div>Template</div><div class="exval"><code>{{ states('sensor.foo') }}</code></div>
                   </div>`,
-    data: html`Passed as the <code>data</code> parameter to the notify service call. Can be:
+    data: html`Passed as the <code>data</code> parameter to the notify service call. Supports template fields. Can be:
                   <div class="extable">
                        <div>YAML dict (flow notation)</div><div class="exval"><code>{ val1: 3, val2: foo }</code></div>
                        <div>YAML dict:</div><div class="exval"><pre>val1: 3\nval2: foo</code></pre></div>
@@ -3538,19 +3544,22 @@ class Alert2Create extends LitElement {
             <div><span style="visibility:hidden">*</span>Threshold <div style="margin-left: 1.5em;">
                <alert2-cfg-field .hass=${this.hass} name="value" type=${FieldTypes.TEMPLATE}
                     @expand-click=${this.expandClick} @change=${this._change} namePrefix="threshold"
-                     templateType=${TemplateTypes.SINGLE} .genResult=${this._generatorResult}
-                     .savedP=${{}} .currP=${this.alertCfg} >
+                     templateType=${TemplateTypes.SINGLE}
+                     .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                   <div slot="help">${helpCommon.value}</div></alert2-cfg-field>
-               <alert2-cfg-field .hass=${this.hass} name="hysteresis" type=${FieldTypes.STR}
+               <alert2-cfg-field .hass=${this.hass} name="hysteresis" type=${FieldTypes.TEMPLATE}
                     @expand-click=${this.expandClick} @change=${this._change} namePrefix="threshold"
+                     templateType=${TemplateTypes.SINGLE} 
                      .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                   <div slot="help">${helpCommon.hysteresis}</div></alert2-cfg-field>
-               <alert2-cfg-field .hass=${this.hass} name="maximum" type=${FieldTypes.STR}
+               <alert2-cfg-field .hass=${this.hass} name="maximum" type=${FieldTypes.TEMPLATE}
                     @expand-click=${this.expandClick} @change=${this._change} namePrefix="threshold"
+                     templateType=${TemplateTypes.SINGLE} 
                      .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                   <div slot="help">${helpCommon.maximum}</div></alert2-cfg-field>
-               <alert2-cfg-field .hass=${this.hass} name="minimum" type=${FieldTypes.STR}
+               <alert2-cfg-field .hass=${this.hass} name="minimum" type=${FieldTypes.TEMPLATE}
                     @expand-click=${this.expandClick} @change=${this._change} namePrefix="threshold"
+                     templateType=${TemplateTypes.SINGLE} 
                      .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                   <div slot="help">${helpCommon.minimum}</div></alert2-cfg-field>
             </div></div>
