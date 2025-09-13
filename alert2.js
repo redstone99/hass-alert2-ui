@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.16  (internal 86)';
+const VERSION = 'v1.16.1  (internal 88)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -656,6 +656,7 @@ class Alert2Overview extends LitElement {
                 <div style="flex-grow: 1;"></div>
                 <ha-progress-button
                     .progress=${this._ackAllInProgress}
+                    .appearance=${"plain"}
                     @click=${this._ackAll}
                     >Ack all</ha-progress-button>
               </div>
@@ -1463,11 +1464,13 @@ class HaAlert2State extends LitElement {
         const is_acked = ent.attributes['is_acked'];
         if (is_acked) {
             ackButton = html`<ha-progress-button
+                  .appearance=${"plain"}
                   .progress=${this._ackInProgress} class="unack"
                   @click=${this._junack}>Unack</ha-progress-button>
                  `;
         } else {
             ackButton = html`<ha-progress-button
+                  .appearance=${"plain"}
                   .progress=${this._ackInProgress}
                   @click=${this._jack}>Ack</ha-progress-button>
                  `;
@@ -1887,10 +1890,12 @@ class MoreInfoAlert2 extends LitElement {
                   <div class="title">Previous Firings (24 hrs)</div>
                   <div style="flex: 1 1 0; max-width: 10em;"></div>
                   <ha-progress-button
+                    .appearance=${"plain"}
                     .progress=${this._fetchPrevInProgress}
                     @click=${this.fetchPrev}
                   >Prev</ha-progress-button>
                   <ha-progress-button
+                    .appearance=${"plain"}
                     .progress=${this._fetchCurrInProgress}
                     @click=${this.fetchCurr}
                   >Reset</ha-progress-button>
@@ -1952,6 +1957,7 @@ class MoreInfoAlert2 extends LitElement {
               </ha-formfield>
             </div>
             <ha-progress-button
+                  .appearance=${"plain"}
                   .progress=${this._requestInProgress}
                   @click=${this._jupdate}>Update</ha-progress-button>
             <br/><br/>
@@ -2410,10 +2416,13 @@ class Alert2Manager extends LitElement {
               <div style="display:flex; align-items: center; margin-bottom: 0.3em;">
                   <!-- this should really just be ha-button -->
                   <ha-progress-button .progress=${false}
+                    .appearance=${"plain"}
                     @click=${this.editDefaults}>Edit defaults</ha-progress-button>
                   <ha-progress-button .progress=${false}
+                    .appearance=${"plain"}
                     @click=${this.createNew}>Create new alert</ha-progress-button>
                   <ha-progress-button .progress=${false}
+                    .appearance=${"plain"}
                     @click=${this.refresh}>Refresh</ha-progress-button>
               </div>
               <div style="margin-bottom: 1em;">
@@ -3267,7 +3276,8 @@ class Alert2EditDefaults extends LitElement {
                  .savedP=${this._topConfigs.origRawUi}  .currP=${this._topConfigs.rawUi} >
                <div slot="help">${helpCommon.defer_startup_notifications}</div></alert2-cfg-field>
             
-            <div style="margin-top: 0.5em 0 2em 2em; margin-left: 2em;"><ha-progress-button .progress=${this._saveInProgress} @click=${this._save}>Save</ha-progress-button></div>
+            <div style="margin-top: 0.5em 0 2em 2em; margin-left: 2em;">
+                 <ha-progress-button .progress=${this._saveInProgress} .appearance=${"plain"} @click=${this._save}>Save</ha-progress-button></div>
             ${this._serverErr ? html`<ha-alert alert-type=${"error"}>${this._serverErr}</ha-alert>` : ""}
          </div>`;
     }
@@ -3677,12 +3687,16 @@ class Alert2Create extends LitElement {
             <hr style="width:60%; max-width: 10em; margin-left: 0; margin-top: 2em;">
 
             <div style="margin-top: 0.5em;"><ha-progress-button class="validateB" @click=${this._validate}
+                 .appearance=${"plain"} 
                  .progress=${this._opInProgress.op=='validate'&&this._opInProgress.inProgress}>Validate</ha-progress-button></div>
             <div style="margin-top: 0.5em;"><ha-progress-button class="createB"  @click=${this._create}
+                 .appearance=${"plain"} 
                  .progress=${this._opInProgress.op=='create'&&this._opInProgress.inProgress}>Create</ha-progress-button></div>
             <div style="margin-top: 0.5em;"><ha-progress-button  class="updateB" @click=${this._update}
+                 .appearance=${"plain"} 
                  .progress=${this._opInProgress.op=='update'&&this._opInProgress.inProgress}>Update</ha-progress-button></div>
             <div style="margin-top: 0.5em;"><ha-progress-button  class="deleteB" @click=${this._delete}
+                 .appearance=${"plain"} 
                  .progress=${this._opInProgress.op=='delete'&&this._opInProgress.inProgress}>Delete</ha-progress-button></div>
             ${this._serverErr ? html`<ha-alert alert-type=${"error"}>${this._serverErr}</ha-alert>` : ""}
 
