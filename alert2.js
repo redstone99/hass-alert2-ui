@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.16.1  (internal 88)';
+const VERSION = 'v1.16.2  (internal 89)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2912,6 +2912,12 @@ let helpCommon = {
                   <div class="extable">
                          <div>Truthy (true/yes/on/1 or opposites)</div><div class="exval"><code>true</code></div>
                   </div>`,
+    persistent_notifier_grouping: html`Controls whether multiple notifications for the same alert to the persistent notifier are collapsed into a single persistent notification or not. Can be:
+                  <div class="extable">
+                         <div>Each notification is distinct</div><div class="exval"><code>separate</code></div>
+                         <div>Notifications for the same alert become a single one</div><div class="exval"><code>collapse</code></div>
+                         <div>"collapse" and notification is dismissed when alert stops firing (for condition alerts)</div><div class="exval"><code>collapse_and_dismiss</code></div>
+                  </div>`,
     reminder_frequency_mins: html`Interval in minutes between reminders that a condition alert continues to fire. Can be:
                   <div class="extable">
                           <div>Single float (>= 0.01)</div><div class="exval"><code>10</code></div>
@@ -3258,6 +3264,11 @@ class Alert2EditDefaults extends LitElement {
                   @expand-click=${this.expandClick}
                  .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
                <div slot="help">${helpCommon.data}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="persistent_notifier_grouping" type=${FieldTypes.BOOL}
+                 .defaultP=${this._topConfigs.rawYaml.defaults}
+                  @expand-click=${this.expandClick}
+                 .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
+               <div slot="help">${helpCommon.persistent_notifier_grouping}</div></alert2-cfg-field>
 
             <h3>Top-level options</h3>
             <alert2-cfg-field .hass=${this.hass} name="skip_internal_errors" type=${FieldTypes.BOOL}
@@ -3434,7 +3445,7 @@ class Alert2Create extends LitElement {
                 let val;
                 if (['domain','name', 'friendly_name', 'condition', 'condition_on', 'condition_off', 'message',
                      'title', 'target',
-                     'annotate_messages', 'ack_required', 'ack_reminders_only', 'early_start', 'generator_name', 'manual_on', 'manual_off',
+                     'annotate_messages', 'persistent_notifier_grouping', 'ack_required', 'ack_reminders_only', 'early_start', 'generator_name', 'manual_on', 'manual_off',
                      'done_message', 'reminder_message', 'ack_reminder_message', 'supersede_debounce_secs', 'display_msg', 'delay_on_secs',
                      'priority','icon'].includes(fname)) {
                     val = yamlEscape(rawVal);
@@ -3646,6 +3657,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${throttle_defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.throttle_fires_per_mins}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="persistent_notifier_grouping" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.persistent_notifier_grouping}</div></alert2-cfg-field>
 
             <h3>Generator</h3>
             <alert2-cfg-field .hass=${this.hass} name="generator" type=${FieldTypes.TEMPLATE}

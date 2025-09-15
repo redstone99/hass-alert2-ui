@@ -588,6 +588,7 @@
              z.checkField('summary_notifier', null);
              z.checkField('done_notifier', null);
              z.checkField('annotate_messages', null);
+             z.checkField('persistent_notifier_grouping', null);
              z.checkField('reminder_frequency_mins', null);
              z.checkField('supersede_debounce_secs', null);
              z.checkField('throttle_fires_per_mins', null);
@@ -665,6 +666,21 @@
              await sleepMs(500);
              await z.checkRender('annotate_messages', /^\s+$/);
 
+             // persistent_notifier_grouping
+             await z.setField('persistent_notifier_grouping', 'separate');
+             await z.checkRender('persistent_notifier_grouping', /result:"separate"/);
+             await z.setField('persistent_notifier_grouping', 'foo');
+             await z.checkRender('persistent_notifier_grouping', /must be one of/, hasErr=true);
+             await z.setField('persistent_notifier_grouping', 'collapse');
+             await z.checkRender('persistent_notifier_grouping', /result:"collapse"/);
+             await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
+                          {config:{ defaults: { 'persistent_notifier_grouping': 'collapse' } }});
+             await sleepMs(100);
+             await z.setField('persistent_notifier_grouping', '');
+             await sleepMs(500);
+             await z.checkRender('persistent_notifier_grouping', /^\s+$/);
+
              // reminder_frequency_mins
              await z.setField('reminder_frequency_mins', '3');
              await z.checkRender('reminder_frequency_mins', /len=1\):\[3\]/);
@@ -723,6 +739,7 @@
              z.setField('summary_notifier', 'snfoo');
              z.setField('done_notifier', 'dnfoo');
              z.setField('annotate_messages', 'yes');
+             z.setField('persistent_notifier_grouping', 'collapse');
              z.setField('reminder_frequency_mins', '77');
              z.setField('supersede_debounce_secs', '78');
              z.setField('throttle_fires_per_mins', '[2,5]');
@@ -739,6 +756,7 @@
                               summary_notifier: 'snfoo',
                               done_notifier: 'dnfoo',
                               annotate_messages: 'yes',
+                              persistent_notifier_grouping: 'collapse',
                               reminder_frequency_mins: '77',
                               supersede_debounce_secs: '78',
                               throttle_fires_per_mins: '[2,5]',
@@ -762,6 +780,7 @@
                           {config:{ defaults: {
                               notifier: '[nfoo,  nnfoo3]',
                               annotate_messages: 'yes',
+                              persistent_notifier_grouping: 'collapse',
                               reminder_frequency_mins: '77',
                               supersede_debounce_secs: '78',
                               throttle_fires_per_mins: '[2,5]',
@@ -782,6 +801,7 @@
              z.checkField('summary_notifier', null);
              z.checkField('done_notifier', null);
              z.checkField('annotate_messages', 'yes');
+             z.checkField('persistent_notifier_grouping', 'collapse');
              z.checkField('reminder_frequency_mins', '77');
              z.checkField('supersede_debounce_secs', '78');
              z.checkField('throttle_fires_per_mins', '[2,5]');
@@ -1078,6 +1098,12 @@
              await z.checkRender('annotate_messages', /result:false/);
              await z.setField('annotate_messages', '');
              await z.checkField('annotate_messages', null);
+
+             // persistent_notifier_grouping
+             await z.setField('persistent_notifier_grouping', 'separate');
+             await z.checkRender('persistent_notifier_grouping', /result:"separate"/);
+             await z.setField('persistent_notifier_grouping', '');
+             await z.checkField('persistent_notifier_grouping', null);
 
              // ack_reminders_only
              await z.setField('ack_reminders_only', 'off');
@@ -1459,6 +1485,7 @@
              z.checkDefault('summary_notifier', /empty: false/);
              z.checkDefault('done_notifier', /empty: true/);
              z.checkDefault('annotate_messages', /empty: false/);
+             z.checkDefault('persistent_notifier_grouping', /empty: "separate"/);
              z.checkDefault('reminder_frequency_mins', /empty: 3/);
              z.checkDefault('throttle_fires_per_mins', /empty: ""/);
              z.checkDefault('supersede_debounce_secs', /empty: 0.5/);
@@ -1505,6 +1532,7 @@
              z.checkDefault('reminder_frequency_mins', /empty: 3/);
              z.checkDefault('supersede_debounce_secs', /empty: 0.5/);
              z.checkDefault('annotate_messages', /empty: "yes"/);
+             z.checkDefault('persistent_notifier_grouping', /empty: "separate"/);
              z.checkDefault('ack_required', /empty: false/);
              z.checkDefault('ack_reminders_only', /empty: false/);
 
