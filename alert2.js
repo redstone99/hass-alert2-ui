@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.16.2  (internal 89)';
+const VERSION = 'v1.16.4  (internal 91)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2313,7 +2313,7 @@ class Alert2Manager extends LitElement {
         this._config = null;
         this.fetchD = debounce(this.updateSearch.bind(this), gDebounceMs);
         this._searchTxt = '';
-        this._searchStatus = { inProgress: false, rez: '', error: null };
+        this._searchStatus = { inProgress: false, rez: null, error: null };
         this._numErrs = 0;
     }
     set hass(newHass) {
@@ -2386,7 +2386,11 @@ class Alert2Manager extends LitElement {
                     if (idx == 0 || el.domain != this._searchStatus.rez.results[idx-1].domain) {
                         alist.push(html`<div class="domainheader">${el.domain}</div>`);
                     }
-                    alist.push(html`<div class="anent" @click=${(ev)=>{ this.entClick(ev, el);}}>${el.id}</div>`);
+                    let errTxt = html``;
+                    if (el.failedToLoad) {
+                        errTxt = html`<span class="loadFailure" style="color: red"> -- failed to load. See alert2.alert2_error notification</span>`;
+                    }
+                    alist.push(html`<div class="anent" @click=${(ev)=>{ this.entClick(ev, el);}}>${el.id}${errTxt}</div>`);
                     if (el.id.startsWith('sensor.alert2generator_')) {
                         let stateObj = this._hass.states[el.id];
                         //console.log(el.id, stateObj);
