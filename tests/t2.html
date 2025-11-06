@@ -106,7 +106,7 @@
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
              if (0) {
-                 jassert(await startTest(doTestAlertManager2));
+                 jassert(await startTest(doTest6));
                  return;
              }
              jassert(await startTest(doTestDefaults));
@@ -115,6 +115,7 @@
              jassert(await startTest(doTestAck));
              jassert(await startTest(doTestAlertManager));
              jassert(await startTest(doTestAlertManager2));
+             jassert(await startTest(doTestData));
              jassert(await startTest(doTest5));
              jassert(await startTest(doTest6));
              jassert(await startTest(doTest7));
@@ -726,8 +727,10 @@
 
              // data
              await z.setField('data', '3');
-             await z.checkRender('data', /must be a dict/, hasErr=true);
+             await z.checkRender('data', /must be either a dict/, hasErr=true);
              await z.setField('data', '{"a":7 }');
+             await z.checkRender('data', /{"a":7}/);
+             await z.setField('data', '{{ {"a":7 } }}');
              await z.checkRender('data', /{"a":7}/);
 
              await z.setField('skip_internal_errors', 'foo');
@@ -1060,8 +1063,10 @@
 
              // data
              await z.setField('data', 'yay');
-             await z.checkRender('data', /must be a dict/, hasErr=true);
+             await z.checkRender('data', /failed to produce a dict/, hasErr=true);
              await z.setField('data', '{a: 3}');
+             await z.checkRender('data', /result:{"a":3}/);
+             await z.setField('data', '{{ {"a": 3} }}');
              await z.checkRender('data', /result:{"a":3}/);
              await z.setField('data', '{a: 3, "b": foo, "c": 3}');
              await z.checkRender('data', /result:{"a":3,"b":"foo","c":3}/);
@@ -1506,6 +1511,28 @@
              z.ao.remove();
          }
 
+         async function doTestData() {
+             // Now reload alerts, creating a YAML one that conflicts with a UI one
+             let tobj = await callApi('POST', 'alert2test/tcheck',
+                                      { stage:'reset', yaml: { defaults: { data: "{{ { 'a': 1 } }}" } },
+                                        uiYaml: { defaults: { data: "{{ {'b':2} }}" } },         });
+             jassertObjeq(tobj, {});
+             let z = null;
+
+             z = await initTest('alert2-create');
+             await sleepMs(10); // seems to help dom get itself sorted out
+             z.checkDefault('data', /Default if empty: \["{{ { 'a': 1 } }}","{{ {'b':2} }}"\]/);
+
+             await z.setField('data', 'c: 3');
+             //await sleepMs(100); // extra sleep needed for some reason ;(
+             await z.checkRender('data', 'result:{"a":1,"b":2,"c":3}');
+             await z.setField('data', '{{ {"c":3} }}');
+             //await sleepMs(100); // extra sleep needed for some reason ;(
+             await z.checkRender('data', 'result:{"a":1,"b":2,"c":3}');
+
+             z.ao.remove();
+         }
+         
          async function doTest5() {
              let tobj = await callApi('POST', 'alert2test/tcheck',
                                       { stage:'reset', yaml: { defaults: { reminder_frequency_mins: 3,
@@ -1655,7 +1682,7 @@
              jassert(ad);
              console.log(ad.textContent);
              jassert(ad.textContent.match(/yippy/));
-             
+
              tobj = await callApi('POST', 'alert2test/tcheck',
                                   { stage:'setEnt', entity_id: 'sensor.a', state: 'yi<b>pp</b>y2'});
              jassertObjeq(tobj, {});

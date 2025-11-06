@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.16.4  (internal 91)';
+const VERSION = 'v1.17  (internal 92)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -3061,6 +3061,7 @@ let helpCommon = {
                   <div class="extable">
                        <div>YAML dict (flow notation)</div><div class="exval"><code>{ val1: 3, val2: foo }</code></div>
                        <div>YAML dict:</div><div class="exval"><pre>val1: 3\nval2: foo</code></pre></div>
+                       <div>Template</div><div class="exval"><code>{{ { 'val1': 3, 'val2': 'foo' } }}</code></div>
                   </div>`,
     skip_internal_errors: html`If true, an entity for alert2.error will not be created, you will not receive any notifications for problems with your config file or Alert2 internal errors, and such errors won't show up in the Alert2 UI card. Errors will still appear in the log file. Can be:
                   <div class="extable">
