@@ -308,7 +308,7 @@ class SingleDisplayValMonitor {
     }
     updateDisplayMsg(ev) {
         //console.log(this.entity_id, 'updateDisplayMsg to ', ev.rendered, this.has_display_msg);
-        this.display_msg = ev.rendered;
+        tis.display_msg = ev.rendered;
         this._changeCbs.forEach((acb)=>{ acb(this.display_msg, this.has_display_msg); });
     }
 };
@@ -610,6 +610,8 @@ class Alert2Overview extends LitElement {
                     // This should have no effect:
                     //     aconf.tap_action = { action: "fire-dom-event" };
                     entityConf.priority = getPriority(this._hass, dispInfo);
+                } else {
+                    // Must be old Alert1 alert. Let it use the default entity row
                 }
                 if (inDetails !== null && !dispInfo.isSuperseded) {
                     entListHtml.push(html`<details><summary>${inDetails.length} superseded ${inDetails.length == 1 ? "alert" : "alerts"}</summary>${inDetails}</details>`);
@@ -896,7 +898,8 @@ class Alert2Overview extends LitElement {
                     isOn = true;
                     testMs =  lastChangeMs;
                     if (!filterRegex || filterRegex.test(entityName)) {
-                        entDispInfos.push({ isOn:isOn, isAcked:isAcked, testMs:testMs, entityName:entityName } );
+                        entDispInfos.push({ isOn:isOn, isAcked:isAcked, testMs:testMs, entityName:entityName,
+                                            supersededBySet: (new Set()) } );
                     }
                 } // else is off, which means acked, or is idle which means is off.
             } else if (entityName.startsWith('alert2.')) {
