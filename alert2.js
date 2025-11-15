@@ -308,7 +308,7 @@ class SingleDisplayValMonitor {
     }
     updateDisplayMsg(ev) {
         //console.log(this.entity_id, 'updateDisplayMsg to ', ev.rendered, this.has_display_msg);
-        tis.display_msg = ev.rendered;
+        this.display_msg = ev.rendered;
         this._changeCbs.forEach((acb)=>{ acb(this.display_msg, this.has_display_msg); });
     }
 };
