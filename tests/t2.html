@@ -609,6 +609,7 @@
              z.checkField('skip_internal_errors', null);
              z.checkField('notifier_startup_grace_secs', null);
              z.checkField('defer_startup_notifications', null);
+             z.checkField('reminder_message', null);
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: {} }});
              // Save the empty page
@@ -748,6 +749,14 @@
              await z.setField('defer_startup_notifications', '[foo, zz ]');
              await z.checkRender('defer_startup_notifications', /len=2\):\["foo","zz"\]/);
 
+             // reminder_message
+             await z.setField('reminder_message', 'sfoo');
+             await z.checkRender('reminder_message', /sfoo/);
+             await z.setField('reminder_message', '');
+             await z.checkRender('reminder_message', /^\s+$/);
+
+
+             
              // Try setting all
              z.setField('notifier', '[nfoo,  nnfoo]');
              z.setField('summary_notifier', 'snfoo');
