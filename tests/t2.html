@@ -772,6 +772,7 @@
              z.setField('priority', 'medium');
              z.setField('icon', 'c:d');
              z.setField('data', '{"a":8}');
+             z.setField('reminder_message', 'rmsg');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
              jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
                           {config:{ defaults: {
@@ -786,6 +787,7 @@
                               priority: 'medium',
                               icon: 'c:d',
                               data: '{"a":8}',
+                              reminder_message: 'rmsg',
                           },
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.2',
@@ -810,6 +812,7 @@
                               priority: 'medium',
                               icon: 'c:d',
                               data: '{"a":8}',
+                              reminder_message: 'rmsg',
                           },
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.3',
@@ -831,6 +834,7 @@
              z.checkField('priority', 'medium');
              z.checkField('icon', 'c:d');
              z.checkField('data', '{"a":8}');
+             z.checkField('reminder_message', 'rmsg');
              
              z.checkField('skip_internal_errors', 'no');
              z.checkField('notifier_startup_grace_secs', '6.3');
