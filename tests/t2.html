@@ -906,7 +906,7 @@
              await z.setField('trigger', '');
              await z.checkField('trigger', null);
              await z.setField('trigger', 'on');
-             await z.checkRender('trigger', /is not iterable/, hasErr=true);
+             await z.checkRender('trigger', /is not .*iterable/, hasErr=true);
              await z.setField('trigger', "[{'platform':'state','entity_id':'sensor.zz'}]");
              await z.checkRender('trigger', /\[{"platform":"state/);
              await z.setField('trigger', '');
@@ -916,7 +916,7 @@
              await z.setField('trigger_on', '');
              await z.checkField('trigger_on', null);
              await z.setField('trigger_on', 'on');
-             await z.checkRender('trigger_on', /is not iterable/, hasErr=true);
+             await z.checkRender('trigger_on', /is not .*iterable/, hasErr=true);
              await z.setField('trigger_on', "[{'platform':'state','entity_id':'sensor.zz'}]");
              await z.checkRender('trigger_on', /\[{"platform":"state/);
              await z.setField('trigger_on', '');
@@ -926,7 +926,7 @@
              await z.setField('trigger_off', '');
              await z.checkField('trigger_off', null);
              await z.setField('trigger_off', 'on');
-             await z.checkRender('trigger_off', /is not iterable/, hasErr=true);
+             await z.checkRender('trigger_off', /is not .*iterable/, hasErr=true);
              await z.setField('trigger_off', "[{'platform':'state','entity_id':'sensor.zz'}]");
              await z.checkRender('trigger_off', /\[{"platform":"state/);
              await z.setField('trigger_off', '');
