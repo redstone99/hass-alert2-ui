@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.17.1  (internal 93)';
+const VERSION = 'v1.18  (internal 94)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -3277,6 +3277,11 @@ class Alert2EditDefaults extends LitElement {
                   @expand-click=${this.expandClick}
                  .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
                <div slot="help">${helpCommon.persistent_notifier_grouping}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="reminder_message" type=${FieldTypes.TEMPLATE}
+                 .defaultP=${this._topConfigs.rawYaml.defaults}
+                  @expand-click=${this.expandClick}
+                 .savedP=${this._topConfigs.origRawUi.defaults}  .currP=${this._topConfigs.rawUi.defaults} >
+               <div slot="help">${helpCommon.reminder_message}</div></alert2-cfg-field>
 
             <h3>Top-level options</h3>
             <alert2-cfg-field .hass=${this.hass} name="skip_internal_errors" type=${FieldTypes.BOOL}
