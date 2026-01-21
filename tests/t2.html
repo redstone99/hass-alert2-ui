@@ -962,7 +962,7 @@
              await z.setField('delay_on_secs', '3');
              await z.checkRender('delay_on_secs', /result:3/);
              await z.setField('delay_on_secs', 'a');
-             await z.checkRender('delay_on_secs', /expected float/, hasErr=true);
+             await z.checkRender('delay_on_secs', /not a float/, hasErr=true);
              await z.setField('delay_on_secs', '');
              await z.checkField('delay_on_secs', null);
 
@@ -1101,6 +1101,14 @@
              await z.checkRender('reminder_frequency_mins', /result \(len=2\):\[3,4\]/);
              await z.setField('reminder_frequency_mins', '');
              await z.checkField('reminder_frequency_mins', null);
+
+             // exception_ignore_regexes
+             await z.setField('exception_ignore_regexes', 'foo');
+             await z.checkRender('exception_ignore_regexes', /result \(len=1\):\["foo"\]/);
+             await z.setField('exception_ignore_regexes', '[foo,"bar"]');
+             await z.checkRender('exception_ignore_regexes', /result \(len=2\):\["foo","bar"\]/);
+             await z.setField('exception_ignore_regexes', '');
+             await z.checkField('exception_ignore_regexes', null);
 
              // supersede_debounce_secs
              await z.setField('supersede_debounce_secs', '3');

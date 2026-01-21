@@ -467,7 +467,7 @@
              newHass.states['alert2.foo32a'] = createEventState('foo32a', 5*60*60*1000, 6*60*60*1000);
              newHass.states['alert2.foo32a'].state = '';
              ao.hass = newHass;
-             await sleepMs(60);
+             await sleepMs(100);
              tEls = ao.shadowRoot.querySelectorAll('hui-alert2-entity-row');
              jassert(tEls.length == 6);
              jassert(tEls[0].shadowRoot.innerHTML.includes('alert2.foo29'));

@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.18  (internal 94)';
+const VERSION = 'v1.18.3  (internal 95)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2930,6 +2930,11 @@ let helpCommon = {
                           <div>Single float (>= 0.01)</div><div class="exval"><code>10</code></div>
                          <div>List of floats:</div><div class="exval"><code>[ 10, 15 ]</code></div>
                   </div>`,
+    exception_ignore_regexes: html`For alert2.alert2_global_exception and alert2.mycomponent_unhandled_exception.  A list of regexes. If exception + stack trace matches any of the regexes, the exception will be logged but not reported. Can be:
+                  <div class="extable">
+                          <div>Single string</div><div class="exval"><code>foo_component</code></div>
+                         <div>List of strings:</div><div class="exval"><code>[ "foo", "bar" ]</code></div>
+                  </div>`,
     supersede_debounce_secs: html`Seconds to wait after alert activity before notifying, to see if a superseding alert becomes active. Can be:
                   <div class="extable">
                           <div>Single float (>= 0)</div><div class="exval"><code>0.5</code></div>
@@ -3463,7 +3468,7 @@ class Alert2Create extends LitElement {
                      'priority','icon'].includes(fname)) {
                     val = yamlEscape(rawVal);
                 } else if (['trigger', 'trigger_on', 'trigger_off', 'data', 'throttle_fires_per_mins',
-                            'reminder_frequency_mins',
+                            'reminder_frequency_mins', 'exception_ignore_regexes',
                             ].includes(fname)) {
                     val = rawVal;
                 } else if (['generator', 'notifier', 'summary_notifier', 'done_notifier', 'supersedes'].includes(fname)) {
@@ -3674,6 +3679,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.persistent_notifier_grouping}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="exception_ignore_regexes" type=${FieldTypes.STR}
+                 @expand-click=${this.expandClick} @change=${this._change}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.exception_ignore_regexes}</div></alert2-cfg-field>
 
             <h3>Generator</h3>
             <alert2-cfg-field .hass=${this.hass} name="generator" type=${FieldTypes.TEMPLATE}
