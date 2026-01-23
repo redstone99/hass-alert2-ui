@@ -216,6 +216,8 @@ Any defaults adjusted via the UI override any defaults specified in your YAML co
 
 Alert2 does not allow any two alerts created via the UI or YAML to have the same domain and name.
 
+To configure alert2 internal alerts such as `alert2_error` and `alert2_global_exception`, use the "Create New Alert" button to create a UI config entry for the alert and set the domain to "alert2" and the name to e.g., "global_exception". Then configure the fields you want, such as `exception_ignore_regexes`, and finally press "Create".
+
 ### Editing config fields
 
 When editing a config field for defaults or an alert, a line will appear with "Render result", showing how Alert2 interprets what you've written.
