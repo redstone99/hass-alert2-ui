@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.18.3  (internal 95)';
+const VERSION = 'v1.18.3  (internal 98)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2361,7 +2361,7 @@ class Alert2Manager extends LitElement {
         this.requestUpdate();
         this.fetchD();
     }
-    // el has { id, domain, name }
+    // el has { uiId, id, domain, name }
     entClick(ev, el) {
         let innerElem = document.createElement('alert2-create');
         innerElem.hass = this._hass;
@@ -2930,7 +2930,7 @@ let helpCommon = {
                           <div>Single float (>= 0.01)</div><div class="exval"><code>10</code></div>
                          <div>List of floats:</div><div class="exval"><code>[ 10, 15 ]</code></div>
                   </div>`,
-    exception_ignore_regexes: html`For alert2.alert2_global_exception and alert2.mycomponent_unhandled_exception.  A list of regexes. If exception + stack trace matches any of the regexes, the exception will be logged but not reported. Can be:
+    exception_ignore_regexes: html`For alert2.alert2_global_exception and alert2.mycomponent_unhandled_exception.  A list of regexes. If exception + stack trace matches any of the regexes, the exception will be logged but not reported. See the <a href="https://github.com/redstone99/hass-alert2#tracked">Tracked</a> section of the main Alert2 documentation for info and example on how to set this field. Can be:
                   <div class="extable">
                           <div>Single string</div><div class="exval"><code>foo_component</code></div>
                          <div>List of strings:</div><div class="exval"><code>[ "foo", "bar" ]</code></div>
@@ -3223,6 +3223,7 @@ class Alert2EditDefaults extends LitElement {
                <li>You can go to "Developer tools" -> YAML and click on "Alert2" to reload both YAML and UI Alert2 alerts with the new settings. <code>notifier_startup_grace_secs</code> and <code>defer_startup_notifications</code> require an HA restart.
                 <li>Click on any field name for brief help and see <a href="https://github.com/redstone99/hass-alert2">https://github.com/redstone99/hass-alert2</a> for more complete documentation on each field.  Also useful may be <a href="https://github.com/redstone99/hass-alert2/blob/master/Recipes.md">Alert2 Recipes</a>
                 <li>Fields are generally interpreted as YAML, with some logic to add quotes if writing a template.
+                <li>To adjust settings for Alert2 internal alerts such as alert2_error and alert2_global_exception, create an alert with the appropriate name (eg domain=alert2 and name=global_exception). See info in the <a href="https://github.com/redstone99/hass-alert2#tracked">Tracked</a> section of the main Alert2 documentation.
                 </ul>
             </div>
             <h3>Default alert parameters</h3>
@@ -3383,7 +3384,7 @@ class Alert2Create extends LitElement {
         if (this.entInfo) {
             try {
                 this.alertCfg = await this.hass.callApi('POST', 'alert2/manageAlert',
-                                                        { load: { domain: this.entInfo.domain, name: this.entInfo.name } });
+                                                        { load: { uiId: this.entInfo.uiId } });
                 console.log('initialzing alertCfg to ', this.alertCfg);
             } catch (err) {
                 this._serverErr = { error: 'http err: ' + JSON.stringify(err) };
@@ -3403,12 +3404,26 @@ class Alert2Create extends LitElement {
         if (this._opInProgress.inProgress) {
             return;
         }
+        if (!this.entInfo && (opName == 'update' || opName == 'delete')) {
+            abutton.actionError();
+            this._serverErr = "error: no alert uiId to update/delete";
+            return;
+        }
+        
         this._opInProgress = { op: opName, inProgress: true };
         let rez;
         //console.log(opName, 'of', this.alertCfg);
         try {
             let obj = {};
-            obj[opName] = this.alertCfg;
+            obj[opName] = {};
+            if (opName == 'create' || opName == 'validate') {
+                obj[opName] = this.alertCfg;
+            } else  {
+                obj[opName] = { uiId: this.entInfo.uiId };
+                if (opName == 'update') {
+                    obj[opName].cfg = this.alertCfg;
+                }
+            }
             rez = await this.hass.callApi('POST', 'alert2/manageAlert', obj);
         } catch (err) {
             console.log(opName, 'CAUGHT ERR', err);
@@ -3428,6 +3443,9 @@ class Alert2Create extends LitElement {
             abutton.actionError();
             this._serverErr = "error: " + rez.error;
             return;
+        }
+        if (opName == 'create') {
+            this.entInfo = { uiId: rez.uiId }; // could also add in domain/name/id, but not necessary
         }
         abutton.actionSuccess();
         this.requestUpdate();
@@ -3518,11 +3536,19 @@ class Alert2Create extends LitElement {
             ack_required: false,
             ack_reminders_only: false
         };
+        let title = '';
+        let uiIdStr = '';
+        if (this.entInfo) {
+            title = html`<h3>Modify UI alert ${this.entInfo.uiId}</h3>`;
+            uiIdStr = ` UI alert ${this.entInfo.uiId}`;
+        } else {
+            title = html`<h3>Create new UI alert</h3>`;
+        }
         return html`
          <div class="container">
          <div class="ifields">
             <div style="margin-bottom: 1em;">
-                Create a new UI alert or edit an existing UI alert.
+                ${title}
                 <li>This page can only modify alerts created via the UI. It will not affect any alerts in YAML. Alert2 does not allow any two alerts created via the UI or YAML to have the same domain and name.
                 <li>If using a generator, the "Render result" line for all fields will update based on the first element produced by the generator.
                 <li>See <a href="https://github.com/redstone99/hass-alert2">https://github.com/redstone99/hass-alert2</a> for more complete documentation on each field.  And see <a href="https://github.com/redstone99/hass-alert2/blob/master/Recipes.md">Alert2 Recipes</a> for examples.
@@ -3730,11 +3756,11 @@ class Alert2Create extends LitElement {
                  .appearance=${"plain"} 
                  .progress=${this._opInProgress.op=='create'&&this._opInProgress.inProgress}>Create</ha-progress-button></div>
             <div style="margin-top: 0.5em;"><ha-progress-button  class="updateB" @click=${this._update}
-                 .appearance=${"plain"} 
-                 .progress=${this._opInProgress.op=='update'&&this._opInProgress.inProgress}>Update</ha-progress-button></div>
+                 .appearance=${"plain"} .disabled=${uiIdStr == ''}
+                 .progress=${this._opInProgress.op=='update'&&this._opInProgress.inProgress}>Update${uiIdStr}</ha-progress-button></div>
             <div style="margin-top: 0.5em;"><ha-progress-button  class="deleteB" @click=${this._delete}
-                 .appearance=${"plain"} 
-                 .progress=${this._opInProgress.op=='delete'&&this._opInProgress.inProgress}>Delete</ha-progress-button></div>
+                 .appearance=${"plain"} .disabled=${uiIdStr == ''}
+                 .progress=${this._opInProgress.op=='delete'&&this._opInProgress.inProgress}>Delete${uiIdStr}</ha-progress-button></div>
             ${this._serverErr ? html`<ha-alert alert-type=${"error"}>${this._serverErr}</ha-alert>` : ""}
 
 

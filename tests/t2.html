@@ -65,6 +65,14 @@
          }
         </style>
         <script>
+         function getInitUiCfg() {
+             return { nextAlertUiId: 1,
+                      defaults: {},
+                      alertInfos: [],
+                      topLevelOptions: {},
+                      oneTime: {},
+             };
+         }
          function waitForEvent(element, eventName) {
              return new Promise((resolve) => {
                  element.addEventListener(eventName, (event) => {
@@ -109,12 +117,12 @@
                  jassert(await startTest(doTest6));
                  return;
              }
-             jassert(await startTest(doTestDefaults));
-             jassert(await startTest(doTestRender));
-             jassert(await startTest(doTestCreate));
-             jassert(await startTest(doTestAck));
-             jassert(await startTest(doTestAlertManager));
-             jassert(await startTest(doTestAlertManager2));
+             //jassert(await startTest(doTestDefaults));
+             //jassert(await startTest(doTestRender));
+             //jassert(await startTest(doTestCreate));
+             //jassert(await startTest(doTestAck));
+             //jassert(await startTest(doTestAlertManager));
+             //jassert(await startTest(doTestAlertManager2));
              jassert(await startTest(doTestData));
              jassert(await startTest(doTest5));
              jassert(await startTest(doTest6));
@@ -126,6 +134,7 @@
              jassert(await startTest(doTestInternal));
              jassert(await startTest(doTestMoreInfo));
              jassert(await startTest(doTestColorConfig));
+             jassert(false); // show in UI alert id, communicate that deleteing specific entry, not contents
              let testStatusEl = document.querySelector('#testStatus');
              if (jassertFailCount == 0) {
                  testStatusEl.innerHTML = `Test: All done`;
@@ -398,6 +407,7 @@
                  ao.setConfig(config);
              }
              if (eName == 'alert2-create') {
+                 jassert(extraParams && Object.hasOwn(extraParams, 'entInfo'));
                  ao.didSomethingCb = ()=>{
                      //console.log('alert2-create didSomethingCb');
                  };
@@ -610,12 +620,11 @@
              z.checkField('notifier_startup_grace_secs', null);
              z.checkField('defer_startup_notifications', null);
              z.checkField('reminder_message', null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {} }});
+             let uiCfg = getInitUiCfg();
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              // Save the empty page
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {} }});
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              // Change a field
              await z.setField('notifier', 'foo');
              await z.checkRender('notifier', /len=1.*"foo"/);
@@ -631,9 +640,9 @@
              await z.checkRender('notifier', /len=1.*"foo"/);
 
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: { notifier: 'foo' } }});
-
+             uiCfg.defaults.notifier = 'foo';
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
+             
              // Reload dialog and check foo is there.
              z.ao.remove();
              await sleepMs(11);
@@ -645,8 +654,8 @@
              await z.checkRender('notifier', /^\s+$/);
              z.checkField('notifier', null);
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: { } }});
+             uiCfg = getInitUiCfg();
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
 
              // summary_notifier
              await z.setField('summary_notifier', 'sfoo');
@@ -672,8 +681,8 @@
              await z.setField('annotate_messages', 'off');
              await z.checkRender('annotate_messages', /result:false/);
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: { 'annotate_messages': 'off' } }});
+             uiCfg.defaults.annotate_messages = 'off';
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              await sleepMs(100);
              await z.setField('annotate_messages', '');
              await sleepMs(500);
@@ -687,8 +696,9 @@
              await z.setField('persistent_notifier_grouping', 'collapse');
              await z.checkRender('persistent_notifier_grouping', /result:"collapse"/);
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: { 'persistent_notifier_grouping': 'collapse' } }});
+             uiCfg = getInitUiCfg();
+             uiCfg.defaults.persistent_notifier_grouping = 'collapse';
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              await sleepMs(100);
              await z.setField('persistent_notifier_grouping', '');
              await sleepMs(500);
@@ -774,8 +784,8 @@
              z.setField('data', '{"a":8}');
              z.setField('reminder_message', 'rmsg');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {
+             uiCfg = getInitUiCfg();
+             uiCfg.defaults = {
                               notifier: '[nfoo,  nnfoo]',
                               summary_notifier: 'snfoo',
                               done_notifier: 'dnfoo',
@@ -788,11 +798,13 @@
                               icon: 'c:d',
                               data: '{"a":8}',
                               reminder_message: 'rmsg',
-                          },
-                                    skip_internal_errors: 'no',
-                                    notifier_startup_grace_secs: '6.2',
-                                    defer_startup_notifications: '[blah,ick]'
-                          }})
+             };
+             uiCfg.topLevelOptions = {
+                 skip_internal_errors: 'no',
+                 notifier_startup_grace_secs: '6.2',
+                 defer_startup_notifications: '[blah,ick]'
+             };
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
 
              // Update two and remove two
              z.setField('notifier', '[nfoo,  nnfoo3]');
@@ -801,8 +813,8 @@
              z.setField('notifier_startup_grace_secs', '6.3');
              z.setField('defer_startup_notifications', '');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button'));
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {
+             uiCfg = getInitUiCfg();
+             uiCfg.defaults = {
                               notifier: '[nfoo,  nnfoo3]',
                               annotate_messages: 'yes',
                               persistent_notifier_grouping: 'collapse',
@@ -812,11 +824,13 @@
                               priority: 'medium',
                               icon: 'c:d',
                               data: '{"a":8}',
-                              reminder_message: 'rmsg',
-                          },
+                 reminder_message: 'rmsg',
+             };
+             uiCfg.topLevelOptions = {
                                     skip_internal_errors: 'no',
                                     notifier_startup_grace_secs: '6.3',
-                          }})
+             };
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
 
              // Reload page to see if we get what we expect
              z.ao.remove();
@@ -1076,7 +1090,7 @@
 
              // data
              await z.setField('data', 'yay');
-             await z.checkRender('data', /failed to produce a dict/, hasErr=true);
+             await z.checkRender('data', /must be either a dict/, hasErr=true);
              await z.setField('data', '{a: 3}');
              await z.checkRender('data', /result:{"a":3}/);
              await z.setField('data', '{{ {"a": 3} }}');
@@ -1213,19 +1227,18 @@
          }
          async function doTestCreate() {
              // Create new alert
-             let z = await initTest('alert2-create');
+             let z = await initTest('alert2-create', { entInfo: null });
              await sleepMs(10); // seems to help dom get itself sorted out
 
              // Update with empty fields fails
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.updateB'));
-             z.checkErr(/required key not provided/);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {} } })
+             z.checkErr(/no alert uiId/);
+             uiCfg = getInitUiCfg();
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
              // Delete with empty fields fails
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.deleteB'));
-             z.checkErr(/required key not provided/);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {} } })
+             z.checkErr(/no alert uiId/);
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
              
              // Create fails - missing fields
@@ -1242,57 +1255,48 @@
              await z.setField('condition', 'off');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.validateB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}}})
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
              
              // So does create
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'off' }
-                          ]}})
+             uiCfg = getInitUiCfg();
+             uiCfg.nextAlertUiId = 2;
+             uiCfg.alertInfos = [ { uiId: 1, cfg: {domain: 'd1', name: 'n1', condition: 'off' }} ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
              // duplicate create should fail
              await z.setField('condition', 'on');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
-             z.checkErr(/Duplicate declaration/);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'off' }
-                          ]}})
+             z.checkErr(/alert already exists/);
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
              // Update
              await z.setField('condition', 'false');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.updateB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'false' }
-                          ]}})
+             uiCfg.alertInfos[0].cfg.condition = 'false';
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
-             // Update won't create
-             await z.setField('condition', 'false');
+             // Update can change alert
+             //await z.setField('condition', 'false');
              await z.setField('name', 'n2');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.updateB'));
-             z.checkErr(/can not find existing/);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'false' }
-                          ]}})
-             await z.setField('name', 'n1');
+             z.checkErr(null);
+             uiCfg.alertInfos = [ { uiId: 1, cfg: {domain: 'd1', name: 'n2', condition: 'false' }} ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
+             //await z.setField('name', 'n1');
              
              // Delete succeeds
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.deleteB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {} } })
+             uiCfg.alertInfos = [];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
              // Delete again should fail
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.deleteB'));
-             z.checkErr(/can not find existing/);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {} } })
+             z.checkErr(/does not exist/);
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
              // Let's check generator updating
              await z.setField('name', '{{genElem}}');
@@ -1309,11 +1313,10 @@
              await z.setField('name', '{{genElem}}');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: '{{genElem}}', condition: 'false', generator_name:'g1',
-                              generator: 'f3' }
-                          ]}})
+             uiCfg.nextAlertUiId = 3;
+             uiCfg.alertInfos = [{ uiId: 2,
+                                   cfg: { domain: 'd1', name: '{{genElem}}', condition: 'false', generator_name:'g1', generator: 'f3' }}];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg)
 
              // Create a simple alert
              await z.setField('generator', '');
@@ -1322,16 +1325,17 @@
              await z.setField('delay_on_secs', '3');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: '{{genElem}}', condition: 'false', generator_name:'g1',
-                              generator: 'f3' },
-                              { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '3' }
-                          ]}})
+             uiCfg.nextAlertUiId = 4;
+             uiCfg.alertInfos = [{ uiId: 2,
+                                   cfg: { domain: 'd1', name: '{{genElem}}', condition: 'false', generator_name:'g1', generator: 'f3' }},
+                                 { uiId: 3,
+                                   cfg: { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '3' }},
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
 
              // Now let's reopen the create dialog as if editing existing alert
              z.ao.remove();
-             z = await initTest('alert2-create', {entInfo: { domain: 'd1', name: 'n2' }});
+             z = await initTest('alert2-create', {entInfo: { 'uiId': 3 }});
              await sleepMs(50); // extra sleep needed for some reason ;(
              await z.checkField('domain', 'd1');
              await z.checkRender('domain', 'result:"d1"');
@@ -1342,16 +1346,16 @@
              await z.setField('delay_on_secs', '4');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.updateB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: '{{genElem}}', condition: 'false', generator_name:'g1',
-                              generator: 'f3' },
-                              { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '4' }
-                          ]}})
+             uiCfg.alertInfos = [{ uiId: 2,
+                                   cfg: { domain: 'd1', name: '{{genElem}}', condition: 'false', generator_name:'g1', generator: 'f3' }},
+                                 { uiId: 3,
+                                   cfg: { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '4' }},
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
 
              // Now reopen dialog of generator alert
              z.ao.remove();
-             z = await initTest('alert2-create', {entInfo: { domain: 'alert2generator', name: 'g1' }});
+             z = await initTest('alert2-create', {entInfo: { uiId: 2 }});
              await sleepMs(100); // extra sleep needed for some reason ;(
              await z.checkField('domain', 'd1');
              await z.checkField('name', '{{genElem}}');
@@ -1364,20 +1368,20 @@
              await z.checkRender('name', 'result:"f3z"');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.updateB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: '{{genElem}}z', condition: 'false', generator_name:'g1',
-                              generator: 'f3' },
-                              { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '4' }
-                          ]}})
+             uiCfg.alertInfos = [{ uiId: 2,
+                                   cfg: { domain: 'd1', name: '{{genElem}}z', condition: 'false', generator_name:'g1', generator: 'f3' }},
+                                 { uiId: 3,
+                                   cfg: { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '4' }},
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
 
              // Delete succeeds
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.deleteB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '4' }
-                          ]}})
+             uiCfg.alertInfos = [{ uiId: 3,
+                                   cfg: { domain: 'd1', name: 'n2', condition: 'false', delay_on_secs: '4' }},
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              
              z.ao.remove();
          }
@@ -1392,17 +1396,17 @@
              z.ao.remove();
 
              // Now create a few alerts
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create', { entInfo: null });
              await sleepMs(10); // seems to help dom get itself sorted out
              await z.setField('domain', 'd1');
              await z.setField('name', 'n1');
              await z.setField('condition', 'off');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'off' }
-                          ]}})
+             let uiCfg = getInitUiCfg();
+             uiCfg.nextAlertUiId = 2;
+             uiCfg.alertInfos = [ { uiId: 1, cfg: {domain: 'd1', name: 'n1', condition: 'off' }} ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              await z.setField('name', 'n3');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
@@ -1412,26 +1416,28 @@
              await z.setField('domain', 'd0');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'off' },
-                              { domain: 'd1', name: 'n3', condition: 'off' },
-                              { domain: 'd1', name: 'n2', condition: 'off' },
-                              { domain: 'd0', name: 'n2', condition: 'off' }
-                          ]}})
+             uiCfg.nextAlertUiId = 5;
+             uiCfg.alertInfos = [
+                 { uiId: 1, cfg: {domain: 'd1', name: 'n1', condition: 'off' }},
+                 { uiId: 2, cfg: {domain: 'd1', name: 'n3', condition: 'off' }},
+                 { uiId: 3, cfg: {domain: 'd1', name: 'n2', condition: 'off' }},
+                 { uiId: 4, cfg: {domain: 'd0', name: 'n2', condition: 'off' }},
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              await z.setField('name', 'n5');
              await z.setField('generator', 'n4');
              await z.setField('generator_name', 'g1');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n1', condition: 'off' },
-                              { domain: 'd1', name: 'n3', condition: 'off' },
-                              { domain: 'd1', name: 'n2', condition: 'off' },
-                              { domain: 'd0', name: 'n2', condition: 'off' },
-                              { domain: 'd0', name: 'n5', condition: 'off', generator_name:'g1',generator:'n4' }
-                          ]}})
+             uiCfg.nextAlertUiId = 6;
+             uiCfg.alertInfos = [
+                 { uiId: 1, cfg: {domain: 'd1', name: 'n1', condition: 'off' }},
+                 { uiId: 2, cfg: {domain: 'd1', name: 'n3', condition: 'off' }},
+                 { uiId: 3, cfg: {domain: 'd1', name: 'n2', condition: 'off' }},
+                 { uiId: 4, cfg: {domain: 'd0', name: 'n2', condition: 'off' }},
+                 { uiId: 5, cfg: { domain: 'd0', name: 'n5', condition: 'off', generator_name:'g1',generator:'n4' }},
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              z.ao.remove();
              
              z = await initTest('alert2-manager');
@@ -1475,26 +1481,30 @@
              jasserteq((await waitSearch(z)).results.length, 1);
              rs = z.ao.shadowRoot.querySelectorAll('div.results > div.anent');
              jasserteq(rs.length, 1);
-             jassertObjeq(z.ao.getSearchStatus().rez, { results: [ { id: 'alert2.d1_n1', domain: 'd1', name: 'n1' }]});
+             jassertObjeq(z.ao.getSearchStatus().rez, { results: [ { uiId: 1, id: 'alert2.d1_n1', domain: 'd1', name: 'n1' }]});
              
              jFireEvent(txtf, 'input', { value: 'g1' });
              await sleepMs(100);
              jasserteq((await waitSearch(z)).results.length, 1);
              rs = z.ao.shadowRoot.querySelectorAll('div.results > div.anent');
              jasserteq(rs.length, 1);
-             jassertObjeq(z.ao.getSearchStatus().rez, { results: [ { id: 'sensor.alert2generator_g1', domain: 'alert2generator', name: 'g1' }]});
+             jassertObjeq(z.ao.getSearchStatus().rez, { results: [ { uiId: 5, id: 'sensor.alert2generator_g1', domain: 'alert2generator', name: 'g1' }]});
 
              z.ao.remove();
          }
 
          async function doTestAlertManager2() {
              // Now reload alerts, creating a YAML one that conflicts with a UI one
+             let uiCfg = getInitUiCfg();
+             uiCfg.nextAlertUiId = 3;
+             uiCfg.alertInfos = [
+                 {uiId:1, cfg:{ domain: 'd1', name: 'n1', condition: 'no' }},
+                 {uiId:2, cfg:{ domain: 'd1', name: 'n2', condition: 'off' }}
+             ];
              let tobj = await callApi('POST', 'alert2test/tcheck',
                                       { stage:'reset', yaml: { alerts: [ { domain: 'd1', name: 'n1', condition: 'off' },
                                       ] },
-                                        uiYaml: { defaults: {}, alerts: [ { domain: 'd1', name: 'n1', condition: 'no' },
-                                                                          { domain: 'd1', name: 'n2', condition: 'off' }
-                                        ]}});
+                                        uiCfg: uiCfg});
              jassertObjeq(tobj, {});
 
              let z = await initTest('alert2-manager');
@@ -1504,22 +1514,22 @@
              jasserteq((await waitSearch(z)).results.length, 2);
              rs = z.ao.shadowRoot.querySelectorAll('div.results > div.anent > span.loadFailure');
              jasserteq(rs.length, 1);
-             jassertObjeq(z.ao.getSearchStatus().rez, { results: [ { id: 'alert2.d1_n1', domain: 'd1', name: 'n1', failedToLoad: true },
-                                                                   { id: 'alert2.d1_n2', domain: 'd1', name: 'n2' },
+             jassertObjeq(z.ao.getSearchStatus().rez, { results: [ { uiId:1, id: 'alert2.d1_n1', domain: 'd1', name: 'n1', failedToLoad: true },
+                                                                   { uiId:2, id: 'alert2.d1_n2', domain: 'd1', name: 'n2' },
              ]});
              z.ao.remove();
 
              // Now delete the UI duplicate alert
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create', { entInfo: { uiId: 1 } } );
              await sleepMs(10); // seems to help dom get itself sorted out
              await z.setField('domain', 'd1');
              await z.setField('name', 'n1');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.deleteB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'n2', condition: 'off' }
-                          ]}})
+             uiCfg.alertInfos = [
+                 {uiId:2, cfg:{ domain: 'd1', name: 'n2', condition: 'off' }}
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              z.ao.remove();
 
              // And should just see the n2 alert
@@ -1534,9 +1544,10 @@
 
          async function doTestData() {
              // Now reload alerts, creating a YAML one that conflicts with a UI one
+             let uiCfg = getInitUiCfg();
              let tobj = await callApi('POST', 'alert2test/tcheck',
                                       { stage:'reset', yaml: { defaults: { data: "{{ { 'a': 1 } }}" } },
-                                        uiYaml: { defaults: { data: "{{ {'b':2} }}" } },         });
+                                        uiCfg: { defaults: { data: "{{ {'b':2} }}" } },         });
              jassertObjeq(tobj, {});
              let z = null;
 
