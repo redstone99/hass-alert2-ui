@@ -218,6 +218,8 @@ Alert2 does not allow any two alerts created via the UI or YAML to have the same
 
 To configure alert2 internal alerts such as `alert2_error` and `alert2_global_exception`, use the "Create New Alert" button to create a UI config entry for the alert and set the domain to "alert2" and the name to e.g., "global_exception". Then configure the fields you want, such as `exception_ignore_regexes`, and finally press "Create".
 
+Each time you press "Create", the UI creates a config entry for the alert and then creates the alert itself from the config. The config entry is assigned a unique number.  If you click on an alert in the "Alert2 Manager" list, you will see that number at the top of the popup and next to the "Update" and "Delete" buttons.  Clicking "Update" updates the config entry and will result in the alert being recreated.  So for example, if you change the "name" field from "n1" to "n2" and click "Update", the alert with name "n1" will be deleted and a new alert with name "n2" will be created.
+
 ### Editing config fields
 
 When editing a config field for defaults or an alert, a line will appear with "Render result", showing how Alert2 interprets what you've written.
