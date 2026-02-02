@@ -113,16 +113,16 @@
              testDiv = document.querySelector('#testDiv');
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
-             if (0) {
-                 jassert(await startTest(doTest6));
+             if (1) {
+                 jassert(await startTest(doTestAnon));
                  return;
              }
-             //jassert(await startTest(doTestDefaults));
-             //jassert(await startTest(doTestRender));
-             //jassert(await startTest(doTestCreate));
-             //jassert(await startTest(doTestAck));
-             //jassert(await startTest(doTestAlertManager));
-             //jassert(await startTest(doTestAlertManager2));
+             jassert(await startTest(doTestDefaults));
+             jassert(await startTest(doTestRender));
+             jassert(await startTest(doTestCreate));
+             jassert(await startTest(doTestAck));
+             jassert(await startTest(doTestAlertManager));
+             jassert(await startTest(doTestAlertManager2));
              jassert(await startTest(doTestData));
              jassert(await startTest(doTest5));
              jassert(await startTest(doTest6));
@@ -134,7 +134,6 @@
              jassert(await startTest(doTestInternal));
              jassert(await startTest(doTestMoreInfo));
              jassert(await startTest(doTestColorConfig));
-             jassert(false); // show in UI alert id, communicate that deleteing specific entry, not contents
              let testStatusEl = document.querySelector('#testStatus');
              if (jassertFailCount == 0) {
                  testStatusEl.innerHTML = `Test: All done`;
@@ -857,7 +856,7 @@
          }
          async function doTestRender() {
              // Create new alert
-             let z = await initTest('alert2-create');
+             let z = await initTest('alert2-create', {entInfo:null});
              await sleepMs(10); // seems to help dom get itself sorted out
 
              // domain
@@ -1545,13 +1544,14 @@
          async function doTestData() {
              // Now reload alerts, creating a YAML one that conflicts with a UI one
              let uiCfg = getInitUiCfg();
+             uiCfg.defaults.data = "{{ {'b':2} }}";
              let tobj = await callApi('POST', 'alert2test/tcheck',
                                       { stage:'reset', yaml: { defaults: { data: "{{ { 'a': 1 } }}" } },
-                                        uiCfg: { defaults: { data: "{{ {'b':2} }}" } },         });
+                                        uiCfg: uiCfg    });
              jassertObjeq(tobj, {});
              let z = null;
 
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create', { entInfo: null });
              await sleepMs(10); // seems to help dom get itself sorted out
              z.checkDefault('data', /Default if empty: \["{{ { 'a': 1 } }}","{{ {'b':2} }}"\]/);
 
@@ -1602,7 +1602,7 @@
 
              z.ao.remove();
              // now let's test create alert
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create', { entInfo: null });
              await sleepMs(100);
              z.checkDefault('domain', null);
              z.checkDefault('name', null);
@@ -1653,7 +1653,7 @@
              z.ao.remove();
 
              // now let's test create alert
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create', { entInfo: null });
              await sleepMs(100);
              z.checkDefault('data', /empty: {"a":13}/);
              z.ao.remove();
@@ -1757,7 +1757,7 @@
          }
          async function doTest7() {
              // Make sure null for notifier and display_msg get saved correctly
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create',{ entInfo: null});
              await sleepMs(10); // seems to help dom get itself sorted out
              await z.setField('domain', 'd1');
              await z.setField('name', 'ny');
@@ -1766,10 +1766,10 @@
              await z.setField('display_msg', 'null');
              await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
              z.checkErr(null);
-             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ),
-                          {config:{ defaults: {}, alerts: [
-                              { domain: 'd1', name: 'ny', condition: 'off', notifier: 'null', display_msg: 'null' }
-                          ]}})
+             let uiCfg = getInitUiCfg();
+             uiCfg.nextAlertUiId = 2;
+             uiCfg.alertInfos = [ { uiId: 1, cfg: { domain: 'd1', name: 'ny', condition: 'off', notifier: 'null', display_msg: 'null' }} ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
              z.ao.remove();
          }
          async function doTest8() {
@@ -2318,13 +2318,22 @@
              
          }
          async function doTestInternal() {
-             z = await initTest('alert2-create');
+             z = await initTest('alert2-create', {entInfo:null});
              await sleepMs(10); // seems to help dom get itself sorted out
              z.checkDefault('throttle_fires_per_mins', /Default if empty: ""/);
              await z.setField('domain', 'alert2');
              await z.setField('name', 'global_exception');
              z.checkDefault('throttle_fires_per_mins', /Default if empty: \[\d+,\d+\]/);
 
+             z.ao.remove();
+         }
+
+         async function doTestMoreInfo() {
+             let z = await initTest('more-info-alert2');
+             let elem = z.ao;
+             elem.stateObj = createState('nn', 5000, 10000, null);
+             await sleepMs(500); // wait for history rpc
+             jassert(z.ao.shadowRoot.querySelector('div.alist div').textContent.trim().startsWith('No state updates found since'));
              z.ao.remove();
          }
 
@@ -2338,12 +2347,40 @@
                                     ['n1', 'n4', 'n2', 'n3'], nBelow=2);
              z.ao.remove();
          }
-         async function doTestMoreInfo() {
-             let z = await initTest('more-info-alert2');
-             let elem = z.ao;
-             elem.stateObj = createState('nn', 5000, 10000, null);
-             await sleepMs(500); // wait for history rpc
-             jassert(z.ao.shadowRoot.querySelector('div.alist div').textContent.trim().startsWith('No state updates found since'));
+         async function doTestAnon() {
+             z = await initTest('alert2-create',{ entInfo: null});
+             await sleepMs(10); // seems to help dom get itself sorted out
+             await z.setField('domain', 'd');
+             await z.setField('name', '{{ genElem }}');
+             await z.setField('condition', 'off');
+             await z.setField('generator', '[ "z" ]');
+             await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
+             z.checkErr(null);
+             
+             await z.setField('domain', 'alert2');
+             await z.setField('name', 'warning');
+             await z.setField('condition', '');
+             await z.setField('generator', '');
+             await z.setField('friendly_name', 'foo');
+             await clickWait(z.ao.shadowRoot.querySelector('ha-progress-button.createB'));
+             z.checkErr(null);
+
+             let uiCfg = getInitUiCfg();
+             uiCfg.nextAlertUiId = 3;
+             uiCfg.alertInfos = [
+                 { uiId: 1, cfg: { domain: 'd', name: '{{ genElem }}', condition: 'off', generator: '[ "z" ]' }},
+                 { uiId: 2, cfg: { domain: 'alert2', name: 'warning', 'friendly_name': 'foo' }}
+             ];
+             jassertObjeq(await callApi('POST', 'alert2test/tcheck', { stage:'getUiData'} ), uiCfg);
+             z.ao.remove();
+             
+             z = await initTest('alert2-manager');
+             await sleepMs(10); // seems to help dom get itself sorted out
+             jasserteq((await waitSearch(z)).results.length, 2);
+             rs = z.ao.shadowRoot.querySelectorAll('div.results > div.anent');
+             jasserteq(rs.length, 2);
+             jasserteq(rs[0].textContent, 'alert2.alert2_warning');
+             jasserteq(rs[1].textContent, 'alert2.alert2generator_anonymous_0');
              z.ao.remove();
          }
         </script>
