@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.18.3  (internal 98)';
+const VERSION = 'v1.19  (internal 101)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -3539,8 +3539,8 @@ class Alert2Create extends LitElement {
         let title = '';
         let uiIdStr = '';
         if (this.entInfo) {
-            title = html`<h3>Modify UI alert ${this.entInfo.uiId}</h3>`;
-            uiIdStr = ` UI alert ${this.entInfo.uiId}`;
+            title = html`<h3>Modify alert entry #${this.entInfo.uiId}</h3>`;
+            uiIdStr = ` alert entry #${this.entInfo.uiId}`;
         } else {
             title = html`<h3>Create new UI alert</h3>`;
         }
