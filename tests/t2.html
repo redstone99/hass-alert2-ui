@@ -113,14 +113,13 @@
              testDiv = document.querySelector('#testDiv');
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
-             if (1) {
+             if (0) {
                  jassert(await startTest(doTestAnon));
                  return;
              }
              jassert(await startTest(doTestDefaults));
              jassert(await startTest(doTestRender));
              jassert(await startTest(doTestCreate));
-             jassert(await startTest(doTestAck));
              jassert(await startTest(doTestAlertManager));
              jassert(await startTest(doTestAlertManager2));
              jassert(await startTest(doTestData));
@@ -130,10 +129,12 @@
              jassert(await startTest(doTest8));
              jassert(await startTest(doTest10));
              jassert(await startTest(doTestConfig));
+             jassert(await startTest(doTestColorConfig));
              jassert(await startTest(doTestSupersedeMgr));
              jassert(await startTest(doTestInternal));
              jassert(await startTest(doTestMoreInfo));
-             jassert(await startTest(doTestColorConfig));
+             jassert(await startTest(doTestAck));
+             jassert(await startTest(doTestAnon));
              let testStatusEl = document.querySelector('#testStatus');
              if (jassertFailCount == 0) {
                  testStatusEl.innerHTML = `Test: All done`;
