@@ -114,7 +114,7 @@
              let alert2Tools = customElements.get('alert2-tools');
              alert2Tools.debounceMs = 1;
              if (0) {
-                 jassert(await startTest(doTestAnon));
+                 jassert(await startTest(emptyCreate));
                  return;
              }
              jassert(await startTest(doTestDefaults));
@@ -2384,6 +2384,12 @@
              jasserteq(rs[1].textContent, 'sensor.alert2generator_anonymous_0');
              z.ao.remove();
          }
+
+         async function emptyCreate() {
+             let z = await initTest('alert2-create', {entInfo:null});
+             await sleepMs(10); // seems to help dom get itself sorted out
+         }
+         
         </script>
     </head>
     <body>

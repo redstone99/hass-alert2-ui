@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.19  (internal 101)';
+const VERSION = 'v1.19.2  (internal 111)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -2127,11 +2127,25 @@ class MoreInfoAlert2Container extends LitElement {
         this.config = null;
         this.large = true;
         this._hass = null;
+        this.open = false;
+        this.waEnabled = true;
     }
     set hass(nhass) {
         this._hass = nhass;
         if (this.config) {
             this.config.innerElem.hass = nhass;
+        }
+        if (this._hass) {
+            const ver = this._hass.config.version.split('.'); // eg '2026.1.3'
+            this.waEnabled = true;
+            if (ver.length == 3) {
+                const yr = +ver[0];
+                if (yr < 2026 || (yr == 2026 && +ver[1] < 3)) {
+                    this.waEnabled = false;
+                }
+            } else {
+                console.error('Alert2 in render can not tell HA version', ver, this._hass.config.version);
+            }
         }
     }
     set stateObj(nobj) {
@@ -2152,6 +2166,16 @@ class MoreInfoAlert2Container extends LitElement {
         this.open = false;
         jFireEvent(this, "dialog-closed", { dialog: this.localName });
     }
+    _dialogClosed() {
+        console.log('---------- dialog closed');
+        this.open = false;
+        //jFireEvent(this, "dialog-closed", { dialog: this.localName });
+    }
+    _dialogOpened() {
+        console.log('---------- dialog opened');
+        this.open = true;
+    }
+    
     connectedCallback() {
         super.connectedCallback();
         //this.getRootNode().querySelector('div.content').style.maxWidth = '60em';
@@ -2191,28 +2215,55 @@ class MoreInfoAlert2Container extends LitElement {
         //let innerHtml = this.config.innerHtml;
         let innerElem = this.config.innerElem;
         //<more-info-alert2  dialogInitialFocus .stateObj=${stateObj} .hass=${this.hass} ></more-info-alert2>
+
+        // Request "full" width so we don't also have to set --ha-dialog-width-lg or something like it. Instead we just control dialog width via --ha-dialog-width-full
+        if (this.waEnabled) {
+            return html`
+           <ha-dialog open flexContent width="full" @closed=${this._dialogClosed} @opened=${this._dialogOpened} >
+              <span class="main-title" slot="headerTitle"> ${title} </span>
+              <ha-icon-button
+                slot="headerNavigationIcon"
+                @click=${this.closeDialog}
+                .label=${this._hass.localize("ui.common.close")}
+              ><ha-icon .icon=${"mdi:close"}></ha-icon></ha-icon-button>
+              <div class="content" tabindex="-1">
+                  ${innerElem}
+             </div>
+           </ha-dialog>
+        `;
+        }
         return html`
-           <ha-dialog open @closed=${this.closeDialog} .heading=${true} hideActions flexContent  >
+           <ha-dialog class="old-dialog" open @closed=${this.closeDialog} .heading=${true} hideActions flexContent  >
               <ha-dialog-header slot="heading">
                 <mwc-icon-button .label=${"dismiss"} dialogAction="cancel" slot="navigationIcon" ><ha-icon .icon=${"mdi:close"} ></ha-icon>
                   </mwc-icon-button>
                 <span class="main-title" slot="title" .title=${title} > ${title} </span>
               </ha-dialog-header>
-              <div class="content" tabindex="-1" dialogInitialFocus>
+              <div class="content-old" tabindex="-1" dialogInitialFocus>
                   ${innerElem}
              </div>
            </ha-dialog>
         `;
     }
     static styles = css`
-        .content {
+        .content, .content-old {
           display: flex;
           flex-direction: column;
           outline: none;
           flex: 1;
         }
+        .main-title {
+           white-space: wrap;
+           word-break: break-all;
+        }
+        .content {
+           /* width: 100%; */
+        }
+        ha-dialog {
+           --ha-dialog-width-full: min(100%, 106em);
+        }
         /********** below is from https://github.com/thomasloven/lovelace-card-tools/blob/master/src/popup.js ***/
-          ha-dialog {
+          ha-dialog.old-dialog {
             --mdc-dialog-min-width: 400px;
             --mdc-dialog-max-width: 600px;
             --mdc-dialog-heading-ink-color: var(--primary-text-color);
@@ -2220,7 +2271,7 @@ class MoreInfoAlert2Container extends LitElement {
             --justify-action-buttons: space-between;
           }
           @media all and (max-width: 450px), all and (max-height: 500px) {
-            ha-dialog {
+            ha-dialog.old-dialog {
               --mdc-dialog-min-width: 100vw;
               --mdc-dialog-max-width: 100vw;
               --mdc-dialog-min-height: 100%;
@@ -2236,20 +2287,6 @@ class MoreInfoAlert2Container extends LitElement {
             background-color: var(--secondary-background-color);
           }
 
-          .main-title {
-            white-space: wrap;
-            word-break: break-all;
-            /* margin-left: 16px; */
-            /* line-height: 1.3em; */
-            /* max-height: 2.6em; */
-            /* display: -webkit-box; */
-            /* overflow: hidden; */
-            /* text-overflow: ellipsis; */
-            /* -webkit-line-clamp: 2; */
-            /* -webkit-box-orient: vertical; */
-          }
-          /* .content {            margin: -20px -24px;          } */
-
           @media all and (max-width: 450px), all and (max-height: 500px) {
             ha-dialog-header {
               background-color: var(--app-header-background-color);
@@ -2258,18 +2295,15 @@ class MoreInfoAlert2Container extends LitElement {
           }
 
           @media all and (min-width: 451px) and (min-height: 501px) {
-            ha-dialog {
+            ha-dialog.old-dialog {
               --mdc-dialog-max-width: 90vw;
             }
-
-            .content {
+            .content-old {
               width: 400px;
             }
-            :host([large]) .content {
+            :host([large]) .content-old {
               width: calc(90vw - 48px);
             }
-
-            /*  :host([large]) ha-dialog-header {  max-width: calc(90vw - 32px); } */
           }
     `;
 }
@@ -3722,7 +3756,7 @@ class Alert2Create extends LitElement {
                <div slot="help">${helpCommon.generator_name}</div></alert2-cfg-field>
 
             <h3>Extra settings</h3>
-            <alert2-cfg-field .hass=${this.hass} name="priority" type=${FieldTypes.STR}
+            <alert2-cfg-field .hass=${this.hass} name="priority" type=${FieldTypes.TEMPLATE}
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.priority}</div></alert2-cfg-field>
