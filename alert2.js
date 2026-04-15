@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.19.2  (internal 111)';
+const VERSION = 'v1.19.5  (internal 113)';
 console.log(`alert2 ${VERSION}`);
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
@@ -545,11 +545,9 @@ class Alert2Overview extends LitElement {
         let outerThis = this;
         try {
             await this._hass.callWS({
-                type: "execute_script",
-                sequence: [ {
-                    service: 'alert2.ack_all',
-                    data: {},
-                }],
+                type: "call_service",
+                domain: 'alert2',
+                service: 'ack_all'
             });
         } catch (err) {
             this._ackAllInProgress = false;
@@ -1409,12 +1407,10 @@ class HaAlert2State extends LitElement {
         if (1) {
             try {
                 await this._hass.callWS({
-                    type: "execute_script",
-                    sequence: [ {
-                        service: isAck ? 'alert2.ack' : 'alert2.unack',
-                        data: {},
-                        target: { entity_id: this._stateObj.entity_id }
-                    }],
+                    type: "call_service",
+                    domain: 'alert2',
+                    service: isAck ? 'ack' : 'unack',
+                    target: { entity_id: this._stateObj.entity_id }
                 });
             } catch (err) {
                 this._ackInProgress = false;
@@ -2054,12 +2050,11 @@ class MoreInfoAlert2 extends LitElement {
         let stateObj = this.stateObj;
         try {
             await this.hass.callWS({
-                type: "execute_script",
-                sequence: [ {
-                    service: 'alert2.notification_control',
-                    data: data,
-                    target: { entity_id: stateObj.entity_id }
-                }],
+                type: "call_service",
+                domain: 'alert2',
+                service: 'notification_control',
+                target: { entity_id: stateObj.entity_id },
+                service_data: data,
             });
         } catch (err) {
             this._requestInProgress = false;
@@ -2078,12 +2073,10 @@ class MoreInfoAlert2 extends LitElement {
         let stateObj = this.stateObj;
         try {
             await this.hass.callWS({
-                type: "execute_script",
-                sequence: [ {
-                    service: 'alert2.ack',
-                    data: {},
-                    target: { entity_id: stateObj.entity_id }
-                }],
+                type: "call_service",
+                domain: 'alert2',
+                service: 'ack',
+                target: { entity_id: stateObj.entity_id }
             });
         } catch (err) {
             this._ackInProgress = false;
