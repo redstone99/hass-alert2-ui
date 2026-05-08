@@ -1,7 +1,3 @@
-    <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.6.0/styles/webawesome.css">
-    <script type="module" src="https://ka-f.webawesome.com/webawesome@3.6.0/webawesome.loader.js"></script>
-
-fuck();
 import { MdListItem, MdSlider, textfieldStyles, TextFieldBase, radioStyles, RadioBase,
          formStyles, FormfieldBase, LitElement, html, css } from './lit-material.js';
 
@@ -20,9 +16,9 @@ import { MdListItem, MdSlider, textfieldStyles, TextFieldBase, radioStyles, Radi
 //import { MdSlider }           from "@material/web/slider/slider";
 //import { mdiAlertOctagram, mdiCheckBold } from "@mdi/js";
 class HaSlider extends MdSlider {
-             static styles = [
-                 ...super.styles,
-                 css`
+    static styles = [
+        ...super.styles,
+        css`
             :host {
               --md-sys-color-primary: var(--primary-color);
               --md-sys-color-on-primary: var(--text-primary-color);
@@ -36,15 +32,15 @@ class HaSlider extends MdSlider {
               width: 200px;
             }
                  `,
-             ];
-         }
-         class HaCard extends LitElement {
-             static properties = {
-                 header: {},
-                 raised: { type: Boolean, reflect: true }
-             }
-
-             static styles = css`
+    ];
+}
+class HaCard extends LitElement {
+    static properties = {
+        header: {},
+        raised: { type: Boolean, reflect: true }
+    }
+    
+    static styles = css`
                 :host {
                   background: var(
                     --ha-card-background,
@@ -115,8 +111,9 @@ class HaSlider extends MdSlider {
             <slot></slot>
                `;
              }
-         }
-         class HaProgressButton extends LitElement {
+}
+
+class HaProgressButton extends LitElement {
              static properties = {
                  disabled: { type: Boolean },
                  progress: { type: Boolean },
@@ -244,8 +241,8 @@ class HaSlider extends MdSlider {
       mwc-button.error slot {
         visibility: hidden;
       }`;
-         }
-         class HaFormfield extends FormfieldBase {
+}
+class HaFormfield extends FormfieldBase {
              static properties = {
                  disabled: { type: Boolean, reflect: true }
              }
@@ -312,8 +309,8 @@ class HaSlider extends MdSlider {
             :host([disabled]) label {
               color: var(--disabled-text-color);
             }`];
-         }
-         class HaRadio extends RadioBase {
+}
+class HaRadio extends RadioBase {
              static styles = [
                  radioStyles,
                  css`
@@ -322,233 +319,46 @@ class HaSlider extends MdSlider {
             }
                  `,
              ];
-         }
-         class HaTextField extends TextFieldBase {
+}
+class HaInput extends LitElement {
              static properties = {
+                 type: { reflect: true },
                  invalid: { type: Boolean },
-                 errorMessage: { attribute: "error-message" },
-                 icon: { type: Boolean },
-                 iconTrailing: { type: Boolean },
-                 autocomplete: {},
-                 autocorrect: {},
-                 inputSpellcheck: { attribute: "input-spellcheck" }
-             }
-             //@query("input") formElement;
-             get formElement() {
-                 return this.shadowRoot.querySelector('input');
+                 value: { state: true },
+                 required: { state: true },
              }
              constructor() {
                  super();
                  this.invalid = null;
-                 this.icon = false;
-                 this.iconTrailing = false;
+                 this.value = 'happy';
+                 this.required = false;
              }
-             updated(changedProperties) {
-                 super.updated(changedProperties);
-                 if (
-                     changedProperties.has("invalid") ||
-                     changedProperties.has("errorMessage")
-                 ) {
-                     this.setCustomValidity(
-                         this.invalid
-                         ? this.errorMessage || this.validationMessage || "Invalid"
-                         : ""
-                     );
-                     if (
-                         this.invalid ||
-                         this.validateOnInitialRender ||
-                         (changedProperties.has("invalid") &&
-                          changedProperties.get("invalid") !== undefined)
-                     ) {
-                         // Only report validity if the field is invalid or the invalid state has changed from
-                         // true to false to prevent setting empty required fields to invalid on first render
-                         this.reportValidity();
-                     }
-                 }
-                 if (changedProperties.has("autocomplete")) {
-                     if (this.autocomplete) {
-                         this.formElement.setAttribute("autocomplete", this.autocomplete);
-                     } else {
-                         this.formElement.removeAttribute("autocomplete");
-                     }
-                 }
-                 if (changedProperties.has("autocorrect")) {
-                     if (this.autocorrect) {
-                         this.formElement.setAttribute("autocorrect", this.autocorrect);
-                     } else {
-                         this.formElement.removeAttribute("autocorrect");
-                     }
-                 }
-                 if (changedProperties.has("inputSpellcheck")) {
-                     if (this.inputSpellcheck) {
-                         this.formElement.setAttribute("spellcheck", this.inputSpellcheck);
-                     } else {
-                         this.formElement.removeAttribute("spellcheck");
-                     }
-                 }
-             }
-
-             renderIcon(
-                 _icon,
-                 isTrailingIcon = false
-             ) {
-                 const type = isTrailingIcon ? "trailing" : "leading";
-
+    render() {
+        //console.log('render ha-input', this.type, this.value, this.required, this.pattern);
                  return html`
-                     <span
-                          class="mdc-text-field__icon mdc-text-field__icon--${type}"
-                          tabindex=${isTrailingIcon ? 1 : -1}
-                         >
-        <slot name="${type}Icon"></slot>
-                     </span>
+                    <wa-input 
+                      .type=${this.type}
+                      .value=${this.value ?? null}
+                      .required=${this.required}
+                      .pattern=${this.pattern}
+                      .min=${this.min}
+                      .autofocus=${this.autofocus}
+                    >
+                        <slot name="end" slot="end"></slot>
+                    </wa-input>
                  `;
-             }
+    }
+}
 
-             static styles = [
-                 textfieldStyles,
-                 css`
-      .mdc-text-field__input {
-        width: var(--ha-textfield-input-width, 100%);
-      }
-      .mdc-text-field:not(.mdc-text-field--with-leading-icon) {
-        padding: var(--text-field-padding, 0px 16px);
-      }
-      .mdc-text-field__affix--suffix {
-        padding-left: var(--text-field-suffix-padding-left, 12px);
-        padding-right: var(--text-field-suffix-padding-right, 0px);
-        padding-inline-start: var(--text-field-suffix-padding-left, 12px);
-        padding-inline-end: var(--text-field-suffix-padding-right, 0px);
-        direction: ltr;
-      }
-      .mdc-text-field--with-leading-icon {
-        padding-inline-start: var(--text-field-suffix-padding-left, 0px);
-        padding-inline-end: var(--text-field-suffix-padding-right, 16px);
-        direction: var(--direction);
-      }
-
-      .mdc-text-field--with-leading-icon.mdc-text-field--with-trailing-icon {
-        padding-left: var(--text-field-suffix-padding-left, 0px);
-        padding-right: var(--text-field-suffix-padding-right, 0px);
-        padding-inline-start: var(--text-field-suffix-padding-left, 0px);
-        padding-inline-end: var(--text-field-suffix-padding-right, 0px);
-      }
-      .mdc-text-field:not(.mdc-text-field--disabled)
-        .mdc-text-field__affix--suffix {
-        color: var(--secondary-text-color);
-      }
-
-      .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__icon {
-        color: var(--secondary-text-color);
-      }
-
-      .mdc-text-field__icon--leading {
-        margin-inline-start: 16px;
-        margin-inline-end: 8px;
-        direction: var(--direction);
-      }
-
-      .mdc-text-field__icon--trailing {
-        padding: var(--textfield-icon-trailing-padding, 12px);
-      }
-
-      .mdc-floating-label:not(.mdc-floating-label--float-above) {
-        text-overflow: ellipsis;
-        width: inherit;
-        padding-right: 30px;
-        padding-inline-end: 30px;
-        padding-inline-start: initial;
-        box-sizing: border-box;
-        direction: var(--direction);
-      }
-
-      input {
-        text-align: var(--text-field-text-align, start);
-      }
-
-      /* Edge, hide reveal password icon */
-      ::-ms-reveal {
-        display: none;
-      }
-
-      /* Chrome, Safari, Edge, Opera */
-      :host([no-spinner]) input::-webkit-outer-spin-button,
-      :host([no-spinner]) input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-
-      /* Firefox */
-      :host([no-spinner]) input[type="number"] {
-        -moz-appearance: textfield;
-      }
-
-      .mdc-text-field__ripple {
-        overflow: hidden;
-      }
-
-      .mdc-text-field {
-        overflow: var(--text-field-overflow);
-      }
-
-      .mdc-floating-label {
-        inset-inline-start: 16px !important;
-        inset-inline-end: initial !important;
-        transform-origin: var(--float-start);
-        direction: var(--direction);
-        text-align: var(--float-start);
-      }
-
-      .mdc-text-field--with-leading-icon.mdc-text-field--filled
-        .mdc-floating-label {
-        max-width: calc(
-          100% - 48px - var(--text-field-suffix-padding-left, 0px)
-        );
-        inset-inline-start: calc(
-          48px + var(--text-field-suffix-padding-left, 0px)
-        ) !important;
-        inset-inline-end: initial !important;
-        direction: var(--direction);
-      }
-
-      .mdc-text-field__input[type="number"] {
-        direction: var(--direction);
-      }
-      .mdc-text-field__affix--prefix {
-        padding-right: var(--text-field-prefix-padding-right, 2px);
-        padding-inline-end: var(--text-field-prefix-padding-right, 2px);
-        padding-inline-start: initial;
-      }
-
-      .mdc-text-field:not(.mdc-text-field--disabled)
-        .mdc-text-field__affix--prefix {
-        color: var(--mdc-text-field-label-ink-color);
-      }
-                 `,
-                 // safari workaround - must be explicit
-                 window.document.dir === "rtl"
-                 ? css`
-          .mdc-text-field--with-leading-icon,
-          .mdc-text-field__icon--leading,
-          .mdc-floating-label,
-          .mdc-text-field--with-leading-icon.mdc-text-field--filled
-            .mdc-floating-label,
-          .mdc-text-field__input[type="number"] {
-            direction: rtl;
-            --direction: rtl;
-          }
-                 `
-                 : css``,
-             ];
-         }
-    class HaPanelLovelace extends LitElement {
+class HaPanelLovelace extends LitElement {
         constructor() { super(); }
-    };
-    class StateBadge extends LitElement {
+};
+class StateBadge extends LitElement {
         render() {
             return html`<div style="width: 40px; height: 20px; border: 1px solid green; box-sizing: border-box;">!</div>`;
         }
-    };
-    class HaMdListItem extends MdListItem {
+};
+class HaMdListItem extends MdListItem {
       static styles = [
           super.styles,
         css`
@@ -576,7 +386,7 @@ class HaSlider extends MdSlider {
             this.value = null;
         }
         render() {
-            return html`<ha-textfield label="some code" .required=${true} type="text" helperpersistent=""  .helper=${"fake code helper"} .value=${this.value} @input=${this._vChange}></ha-textfield>`;
+            return html`<ha-input label="some code" .required=${true} type="text" helperpersistent=""  .helper=${"fake code helper"} .value=${this.value} @input=${this._vChange}></ha-input>`;
         }
         _vChange(ev) {
             let value = ev.detail?.value || ev.target.value;
@@ -594,7 +404,7 @@ class HaSlider extends MdSlider {
          customElements.define('ha-progress-button', HaProgressButton);
          customElements.define('ha-formfield', HaFormfield);
          customElements.define('ha-radio', HaRadio);
-    customElements.define('ha-textfield', HaTextField);
+    customElements.define('ha-input', HaInput); // hack
     window.LitElement = LitElement;
     window.LitElement.prototype.html = html;
     window.LitElement.prototype.css = css;

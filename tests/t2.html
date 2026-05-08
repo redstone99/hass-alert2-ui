@@ -9,6 +9,8 @@
     -->
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.6.0/styles/webawesome.css">
+        <script type="module" src="https://ka-f.webawesome.com/webawesome@3.6.0/webawesome.loader.js"></script>
         <style>
          html {
              --primary-text-color: #212121;
@@ -109,6 +111,7 @@
          }
          let testDiv;
          window.addEventListener('DOMContentLoaded', async function() {
+             await customElements.whenDefined('wa-input');
              await loadScript('./ha-lib.js', 'module');
              await loadScript('../alert2.js');
              testDiv = document.querySelector('#testDiv');
@@ -2394,6 +2397,7 @@
         </script>
     </head>
     <body>
+        <wa-input label="ick" ></wa-input>
         <h2 id="testStatus">Test: Loading libraries...</h2>
         <div id="testDiv" style="width: 100%; max-width: 30em;"></div>
     </body>

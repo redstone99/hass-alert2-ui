@@ -6,7 +6,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.19.5  (internal 118)';
+const VERSION = 'v1.20.2  (internal 119)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
@@ -1881,14 +1881,12 @@ class MoreInfoAlert2 extends LitElement {
                               .min=${0}
                               .disabled=${false}
                               .required=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
-                              .suffix=${"hours"}
-                              .validityTransform=${snoozeValidFunc}
+                              .pattern=${"[0-9]+(\.[0-9]+)?"}
                              type="number"
                              inputMode="decimal"
-                              autoValidate
-                              ?no-spinner=false
+                              auto-validate
                               @input=${this._handleInputChange}
-                              ></ha-input>
+                              ><div slot="end">hours</div></ha-input>
                          ` :  html`
                                   <ha-textfield
                               .placeholder=${"1.234"}
@@ -2465,7 +2463,7 @@ class Alert2Manager extends LitElement {
             }
         }
         const haInput = useHaInput ? 
-              html`<ha-input type="text" .value=${this._searchTxt} autofocus @input=${this._change} ></ha-input>`:
+              html`<ha-input type="text" .value=${this._searchTxt} .autofocus=${true} @input=${this._change} ></ha-input>`:
               html`<ha-textfield type="text" .value=${this._searchTxt} autofocus @input=${this._change} ></ha-textfield>`;
         return html`<ha-card>
             <h1 class="card-header"><div class="name">Alert2 Manager</div></h1>
@@ -2783,7 +2781,7 @@ class Alert2CfgField extends LitElement {
         if ([FieldTypes.STR, FieldTypes.FLOAT, FieldTypes.BOOL].includes(this.type)) {
             const aType = (this.type == FieldTypes.FLOAT) ? 'number' : 'text';
             editElem = useHaInput ? 
-                html`<ha-input .required=${this.required} type=${aType} .value=${value} autofocus
+                html`<ha-input .required=${this.required} type=${aType} .value=${value} .autofocus=${true}
                                        @input=${this._change} ></ha-input>`:
                 html`<ha-textfield .required=${this.required} type=${aType} .value=${value} autofocus
                                        @input=${this._change} ></ha-textfield>`;
@@ -2793,6 +2791,8 @@ class Alert2CfgField extends LitElement {
                   linewrap style="display: block; min-width: 10em;"
                    @keydown=${{handleEvent: (ev) => this._codeKeydown(ev), capture: true}}
                    ></ha-code-editor>`;
+        } else {
+            throw new Error(`Unknown cfg field type=${this.type}`);
         }
         if (this.focusOnce) {
             // I wish we had access to Lit's ref() directive.  Sigh.
