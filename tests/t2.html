@@ -65,6 +65,7 @@
          }
         </style>
         <script>
+         window.frontendVersion = '20260501';
          function getInitUiCfg() {
              return { nextAlertUiId: 1,
                       defaults: {},
@@ -508,7 +509,7 @@
              async function setField(aname, val) {
                  jasserteq(typeof val, "string");
                  let cf = ao.shadowRoot.querySelector(`alert2-cfg-field[name="${aname}"]`);
-                 let jj = cf.shadowRoot.querySelector('ha-textfield');
+                 let jj = cf.shadowRoot.querySelector('ha-input');
                  if (jj) {
                      if (val == '') {
                          jj.value = val;
@@ -522,7 +523,7 @@
                          let cc = 100;
                          if (0) {
                              jj = cf.shadowRoot.querySelector('ha-code-editor')
-                                    .shadowRoot.querySelector('ha-textfield')
+                                    .shadowRoot.querySelector('ha-input')
                                     .shadowRoot.querySelector('input');
                              jassert(jj);
                              jj.focus();
@@ -1461,7 +1462,7 @@
              jasserteq(detEnts[1].textContent, 'def');
              
              // Type a search term
-             let txtf = z.ao.shadowRoot.querySelector('ha-textfield');
+             let txtf = z.ao.shadowRoot.querySelector('ha-input');
              jassert(txtf);
              jFireEvent(txtf, 'input', { value: 'z' });
              //txtf.value = 'z';

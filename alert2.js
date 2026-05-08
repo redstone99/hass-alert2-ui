@@ -6,8 +6,11 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.19.5  (internal 113)';
+const VERSION = 'v1.19.5  (internal 118)';
 console.log(`alert2 ${VERSION}`);
+
+// TODDO - maybe in 2028, remove this legacy support.
+const useHaInput = window.frontendVersion >= '20260415';
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
 function jFireEvent(elem, evName, params) {
@@ -1872,7 +1875,36 @@ class MoreInfoAlert2 extends LitElement {
         let snoozeValidFunc = (newValue, nativeValidity) => {
             return { valid: (strIsValidNumber(newValue) != false) };
         }
-
+        let haInput = useHaInput ? html`
+                          <ha-input
+                              .placeholder=${"1.234"}
+                              .min=${0}
+                              .disabled=${false}
+                              .required=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
+                              .suffix=${"hours"}
+                              .validityTransform=${snoozeValidFunc}
+                             type="number"
+                             inputMode="decimal"
+                              autoValidate
+                              ?no-spinner=false
+                              @input=${this._handleInputChange}
+                              ></ha-input>
+                         ` :  html`
+                                  <ha-textfield
+                              .placeholder=${"1.234"}
+                              .min=${0}
+                              .disabled=${false}
+                              .required=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
+                              .suffix=${"hours"}
+                              .validityTransform=${snoozeValidFunc}
+                             type="number"
+                             inputMode="decimal"
+                              autoValidate
+                              ?no-spinner=false
+                              @input=${this._handleInputChange}
+                              ></ha-textfield>
+                           `;
+        
         // This is written so that it will stay live and update notification control status,
         // but will not change the notification control settings themselves,
         // so you don't get overrulled why trying to change settings.  This is done by
@@ -1930,19 +1962,7 @@ class MoreInfoAlert2 extends LitElement {
                   <div style="display:flex; flex-direction: row; align-items:center;" id="slabel" @click=${this._aclick}>
                       <div>Snooze for</div>
                       <div style="margin-bottom: -3.3em;">
-                          <ha-textfield
-                              .placeholder=${"1.234"}
-                              .min=${0}
-                              .disabled=${false}
-                              .required=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
-                              .suffix=${"hours"}
-                              .validityTransform=${snoozeValidFunc}
-                             type="number"
-                             inputMode="decimal"
-                              autoValidate
-                              ?no-spinner=false
-                              @input=${this._handleInputChange}
-                              ></ha-textfield>
+                          ${haInput}
                           <div style="display:flex;align-items:center;margin-top:-0.5em;">
                               <ha-formfield>
                                   <ha-checkbox .checked=${this._snooze_includes_ack}
@@ -1983,7 +2003,7 @@ class MoreInfoAlert2 extends LitElement {
     div#slabel {
       pointer: default;
     }
-    ha-textfield {
+    ha-textfield, ha-input {
       margin-left: 1em;
       margin-right: 1em;
     }
@@ -2444,6 +2464,9 @@ class Alert2Manager extends LitElement {
                 resultHtml = html`<div>No results</div>`;
             }
         }
+        const haInput = useHaInput ? 
+              html`<ha-input type="text" .value=${this._searchTxt} autofocus @input=${this._change} ></ha-input>`:
+              html`<ha-textfield type="text" .value=${this._searchTxt} autofocus @input=${this._change} ></ha-textfield>`;
         return html`<ha-card>
             <h1 class="card-header"><div class="name">Alert2 Manager</div></h1>
             <div class="card-content">
@@ -2459,9 +2482,8 @@ class Alert2Manager extends LitElement {
                     .appearance=${"plain"}
                     @click=${this.refresh}>Refresh</ha-progress-button>
               </div>
-              <div style="margin-bottom: 1em;">
-                  Search: 
-                  <ha-textfield type="text" .value=${this._searchTxt} autofocus @input=${this._change} ></ha-textfield>
+              <div style="margin-bottom: 1em; display: flex; align-items: center;">
+                  <div style="margin-right: 0.6em;">Search:</div>${haInput}
               </div>
               <div>
                   ${this._searchStatus.inProgress ? html`<ha-circular-progress class="render-spinner" indeterminate size="small" style="display: inline-block;"></ha-circular-progress>` : ''}
@@ -2712,11 +2734,12 @@ class Alert2CfgField extends LitElement {
         await this.updateComplete;
         //console.log(this.shadowRoot.querySelectorAll('ha-textfield'));
         //console.log(this.shadowRoot.querySelectorAll('ha-code-editor'));
-        let els = this.shadowRoot.querySelectorAll('ha-textfield, ha-code-editor');
+        const haInputTag = useHaInput ? 'ha-input' : 'ha-textfield';
+        let els = this.shadowRoot.querySelectorAll(`${haInputTag}, ha-code-editor`);
         //console.log(els);
         if (els) {
             console.log('focusing on ', els[0].nodeName);
-            if (els[0].nodeName == 'HA-TEXTFIELD') {
+            if (els[0].nodeName == haInputTag.toUpperCase()) {
                 els[0].focus();
             } else {
                 let tries = 0;
@@ -2757,14 +2780,12 @@ class Alert2CfgField extends LitElement {
         let finalValue = (hasDefault && value == '') ? defaultValue : value;
         
         let editElem;
-        if (this.type == FieldTypes.STR) {
-            editElem = html`<ha-textfield .required=${this.required} type="text" .value=${value} autofocus
-                                       @input=${this._change} ></ha-textfield>`;
-        } else if (this.type == FieldTypes.FLOAT) {
-            editElem = html`<ha-textfield .required=${this.required} type="number" .value=${value} autofocus
-                                       @input=${this._change} ></ha-textfield>`;
-        } else if (this.type == FieldTypes.BOOL) {
-            editElem = html`<ha-textfield .required=${this.required} type="text" .value=${value} autofocus
+        if ([FieldTypes.STR, FieldTypes.FLOAT, FieldTypes.BOOL].includes(this.type)) {
+            const aType = (this.type == FieldTypes.FLOAT) ? 'number' : 'text';
+            editElem = useHaInput ? 
+                html`<ha-input .required=${this.required} type=${aType} .value=${value} autofocus
+                                       @input=${this._change} ></ha-input>`:
+                html`<ha-textfield .required=${this.required} type=${aType} .value=${value} autofocus
                                        @input=${this._change} ></ha-textfield>`;
         } else if (this.type == FieldTypes.TEMPLATE) {
             editElem = html`<ha-code-editor mode="jinja2" .hass=${this.hass} .value=${value} .readOnly=${false}
