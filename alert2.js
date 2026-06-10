@@ -1,3 +1,5 @@
+//import "https://ka-f.webawesome.com/webawesome@3.8.0/webawesome.loader.js";
+//import RadioGroup from "@home-assistant/webawesome/dist/components/radio-group/radio-group";
 const LitElement = Object.getPrototypeOf(customElements.get("ha-panel-lovelace"));
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
@@ -6,11 +8,59 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.20.2  (internal 119)';
+const VERSION = 'v1.20.3  (internal 136)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
 const useHaInput = window.frontendVersion >= '20260415';
+const useRadioGroup = window.frontendVersion >= '20260527'; // HA 2026.6
+
+// From
+//   https://github.com/nielsfaber/scheduler-card/blob/main/src/lib/load_ha_form.js
+// or
+//   https://github.com/KipK/load-ha-components/blob/main/src/load-ha-components.ts
+//
+// This seems to be the only way to ensure that ha-radio-group is defined :(.
+// So hacky!
+async function loadHaForm() {
+    const hasRadio = useRadioGroup ? customElements.get('ha-radio-group') : customElements.get('ha-radio');
+    if (customElements.get("ha-checkbox") &&
+        customElements.get("ha-slider") &&
+        hasRadio) return;
+
+    await customElements.whenDefined("partial-panel-resolver");
+    const ppr = document.createElement('partial-panel-resolver');
+    ppr.hass = {
+        panels: [{
+            url_path: "tmp",
+            component_name: "config",
+        }]
+    };
+    ppr._updateRoutes();
+    await ppr.routerOptions.routes.tmp.load();
+
+    await customElements.whenDefined("ha-panel-config");
+    const cpr = document.createElement("ha-panel-config");
+    await cpr.routerOptions.routes.automation.load();
+    console.log('Alert2: loadHaForm completed');
+}
+
+//function loadCSS(url) {
+//  const link = document.createElement("link");
+//  link.type = "text/css";
+//  link.rel = "stylesheet";
+//  link.href = url;
+//  document.head.appendChild(link);
+//}
+//function loadModule 
+//loadCSS('https://ka-f.webawesome.com/webawesome@3.8.0/styles/webawesome.css');
+//<link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.8.0/styles/webawesome.css" />
+//<script type="module" src="https://ka-f.webawesome.com/webawesome@3.8.0/webawesome.loader.js"></script>
+//import('https://ka-f.webawesome.com/webawesome@3.8.0/webawesome.loader.js').then( (module)=> {
+//    console.warn('webawesome loaded!!!!');
+//});
+
+
 
 //let queueMicrotask =  window.queueMicrotask || ((handler) => window.setTimeout(handler, 1));
 function jFireEvent(elem, evName, params) {
@@ -486,6 +536,7 @@ class Alert2Overview extends LitElement {
         }
     }
     setConfig(config) {
+        loadHaForm().then( ()=>{ } );
         this._config = config;
         this._configError = null;
         if (this._config) {
@@ -1902,39 +1953,43 @@ class MoreInfoAlert2 extends LitElement {
                               @input=${this._handleInputChange}
                               ></ha-textfield>
                            `;
-        
-        // This is written so that it will stay live and update notification control status,
-        // but will not change the notification control settings themselves,
-        // so you don't get overrulled why trying to change settings.  This is done by
-        // having this._currSelectorValue and _currSnoozeValue only change due to user input, not changes to hass.
-        return html`
-         <div class="container" >
-            <state-card-content
-              in-dialog
-              .stateObj=${stateObj}
-              .hass=${this.hass}
-            ></state-card-content>
-            <div id="previousFirings" style="margin-top: 1em;">
-               <div style="display: flex; margin-top: 2em; margin-bottom: 1em; align-items: center;">
-                  <div class="title">Previous Firings (24 hrs)</div>
-                  <div style="flex: 1 1 0; max-width: 10em;"></div>
-                  <ha-progress-button
-                    .appearance=${"plain"}
-                    .progress=${this._fetchPrevInProgress}
-                    @click=${this.fetchPrev}
-                  >Prev</ha-progress-button>
-                  <ha-progress-button
-                    .appearance=${"plain"}
-                    .progress=${this._fetchCurrInProgress}
-                    @click=${this.fetchCurr}
-                  >Reset</ha-progress-button>
-               </div>
-               <div class="alist">
-                  ${historyHtml}
-               </div>
-            </div>
-            <div class="title" style="margin-top: 1em;">Notifications</div>
-            <div style="margin-bottom: 0.3em;">Status: ${notification_status}</div>
+        let radioGroup = useRadioGroup ? html`
+            <ha-radio-group label="Notification control options" orientation="vertical" @change=${this._selectorValueChanged}>
+                  <ha-radio-option
+                      .checked=${NOTIFICATIONS_ENABLED == this._currSelectorValue}
+                      .value=${NOTIFICATIONS_ENABLED}
+                      .disabled=${false}
+                      >Enable</ha-radio-option>
+                 <ha-radio-option
+                   .checked=${NOTIFICATIONS_DISABLED == this._currSelectorValue}
+                   .value=${NOTIFICATIONS_DISABLED}
+                   .disabled=${false}
+                   >Disable</ha-radio-option>
+                  <!-- if change structure of HTML here, update _aclick() -->
+                 <ha-radio-option
+                      id="rad1"
+                      .checked=${NOTIFICATIONS_SNOOZED == this._currSelectorValue}
+                      .value=${NOTIFICATIONS_SNOOZED}
+                      .disabled=${false}
+                     style="display: flex; flex-direction: row; align-items: center; margin-bottom: 1.3em;"
+                      >
+                      <div>Snooze for</div>
+                      <div style="margin-bottom: -1.3em;">
+                          ${haInput}
+                          <div style="display:flex;align-items:center;margin-top:0em;margin-left:1em;">
+                              <ha-formfield>
+                                  <ha-checkbox .checked=${this._snooze_includes_ack}
+                                                @change=${this._snooze_ack_toggle} .label=${"happy"}
+                                                ></ha-checkbox>
+                                  <ha-formfield-label slot="label">Ack once now</ha-formfield-label>
+                              </ha-formfield>
+                          </div>
+                      </div>
+                  </div>
+                 </ha-radio-option>
+                  
+              </ha-radio-group>
+`:html`
             <div><ha-formfield .label=${"Enable"}>
                   <ha-radio
                       .checked=${NOTIFICATIONS_ENABLED == this._currSelectorValue}
@@ -1971,8 +2026,44 @@ class MoreInfoAlert2 extends LitElement {
                           </div>
                       </div>
                   </div>
+
               </ha-formfield>
             </div>
+`;
+        
+        // This is written so that it will stay live and update notification control status,
+        // but will not change the notification control settings themselves,
+        // so you don't get overrulled why trying to change settings.  This is done by
+        // having this._currSelectorValue and _currSnoozeValue only change due to user input, not changes to hass.
+        return html`
+         <div class="container" >
+            <state-card-content
+              in-dialog
+              .stateObj=${stateObj}
+              .hass=${this.hass}
+            ></state-card-content>
+            <div id="previousFirings" style="margin-top: 1em;">
+               <div style="display: flex; margin-top: 2em; margin-bottom: 1em; align-items: center;">
+                  <div class="title">Previous Firings (24 hrs)</div>
+                  <div style="flex: 1 1 0; max-width: 10em;"></div>
+                  <ha-progress-button
+                    .appearance=${"plain"}
+                    .progress=${this._fetchPrevInProgress}
+                    @click=${this.fetchPrev}
+                  >Prev</ha-progress-button>
+                  <ha-progress-button
+                    .appearance=${"plain"}
+                    .progress=${this._fetchCurrInProgress}
+                    @click=${this.fetchCurr}
+                  >Reset</ha-progress-button>
+               </div>
+               <div class="alist">
+                  ${historyHtml}
+               </div>
+            </div>
+            <div class="title" style="margin-top: 1em;">Notifications</div>
+            <div style="margin-bottom: 0.3em;">Status: ${notification_status}</div>
+            ${radioGroup}
             <ha-progress-button
                   .appearance=${"plain"}
                   .progress=${this._requestInProgress}
@@ -2026,8 +2117,13 @@ class MoreInfoAlert2 extends LitElement {
         this._snooze_includes_ack = isChecked;
     }
     _selectorValueChanged(ev) {
-        let value = ev.detail?.value || ev.target.value;
-        this._currSelectorValue = value;
+        let value = ev.target.value;
+        if (!useRadioGroup || ev.target.nodeName == 'HA-RADIO-GROUP') {
+            //console.log('radio clicked, val', value);
+            this._currSelectorValue = value;
+        } else {
+            //console.log('ignoring click from I think the ha-input/ha-checkbox', value, ev.target);
+        }
     }
     _handleInputChange(ev) {
         //ev.stopPropagation();
@@ -2370,6 +2466,7 @@ class Alert2Manager extends LitElement {
     }
     setConfig(config) {
         this._config = config;
+        loadHaForm().then( ()=>{ } );
     }
     connectedCallback() {
         super.connectedCallback();
