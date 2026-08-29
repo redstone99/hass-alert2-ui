@@ -8,12 +8,13 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.20.3  (internal 136)';
+const VERSION = 'v1.21  (internal 144)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
 const useHaInput = window.frontendVersion >= '20260415';
 const useRadioGroup = window.frontendVersion >= '20260527'; // HA 2026.6
+
 
 // From
 //   https://github.com/nielsfaber/scheduler-card/blob/main/src/lib/load_ha_form.js
@@ -22,7 +23,13 @@ const useRadioGroup = window.frontendVersion >= '20260527'; // HA 2026.6
 //
 // This seems to be the only way to ensure that ha-radio-group is defined :(.
 // So hacky!
-async function loadHaForm() {
+//
+// TODO - we only need this when opening the more-info dialog. We could delay this to when/if that happens.
+let haformLoadStarted = false; // so we only request this expensive op once
+async function loadHaForm(aHass) {
+    //if (haformLoadStarted) { return }
+    haformLoadStarted = true;
+    console.log('Alert2: loadHaForm starting');
     const hasRadio = useRadioGroup ? customElements.get('ha-radio-group') : customElements.get('ha-radio');
     if (customElements.get("ha-checkbox") &&
         customElements.get("ha-slider") &&
@@ -34,9 +41,11 @@ async function loadHaForm() {
         panels: [{
             url_path: "tmp",
             component_name: "config",
-        }]
+        }],
+        auth: aHass.auth
     };
-    ppr._updateRoutes();
+    await ppr._updateRoutes();
+    //console.log('Alert2: loadHaForm did _updateRoutes');
     await ppr.routerOptions.routes.tmp.load();
 
     await customElements.whenDefined("ha-panel-config");
@@ -512,6 +521,9 @@ class Alert2Overview extends LitElement {
             this._displayValMonitor.updateHass(newHass);
         }
         this.slowedUpdate(false);
+        if (this._hass && !haformLoadStarted) {
+            loadHaForm(this._hass).then( ()=>{ } );
+        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -536,7 +548,6 @@ class Alert2Overview extends LitElement {
         }
     }
     setConfig(config) {
-        loadHaForm().then( ()=>{ } );
         this._config = config;
         this._configError = null;
         if (this._config) {
@@ -2463,10 +2474,12 @@ class Alert2Manager extends LitElement {
     set hass(newHass) {
         const oldHass = this._hass;
         this._hass = newHass;
+        if (this._hass && !haformLoadStarted) {
+            loadHaForm(this._hass).then( ()=>{ } );
+        }
     }
     setConfig(config) {
         this._config = config;
-        loadHaForm().then( ()=>{ } );
     }
     connectedCallback() {
         super.connectedCallback();
