@@ -8,7 +8,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.22  (internal 155)';
+const VERSION = 'v1.22  (internal 158)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
@@ -1871,7 +1871,7 @@ class MoreInfoAlert2 extends LitElement {
         let actionOnStatus = stateObj.attributes.actions_on_script_running;
         const hasActionOn = actionOnStatus !== undefined;
         const actionGroup = hasActionOn ? html`
-            <div style="display: flex; margin-top: 2em; margin-bottom: 1em; align-items: center;">
+            <div id="actionsOnStatus" style="display: flex; margin-top: 2em; margin-bottom: 1em; align-items: center;">
                <div class="title"><code>actions_on</code> script running: </div>
                <div style="margin-left: 0.8em; margin-right:1em;">${actionOnStatus}</div>
                <ha-progress-button
@@ -3186,7 +3186,25 @@ let helpCommon = {
                        <div>Entity name containing truthy value</div><div class="exval"><code>binary_sensor.trouble</code></div>
                        <div>Template evaluating to truthy</div><div class="exval"><code>{{ states('sensor.foo')|float > 3 }}</code></div>
                   </div>`,
+    condition_on: html`Alert starts firing when specified condition becomes true. Can be:
+                  <div class="extable">
+                       <div>Entity name containing truthy value</div><div class="exval"><code>binary_sensor.trouble</code></div>
+                       <div>Template evaluating to truthy</div><div class="exval"><code>{{ states('sensor.foo')|float > 3 }}</code></div>
+                  </div>`,
+    condition_off: html`Alert stops firing when specified condition becomes true. Can be:
+                  <div class="extable">
+                       <div>Entity name containing truthy value</div><div class="exval"><code>binary_sensor.trouble</code></div>
+                       <div>Template evaluating to truthy</div><div class="exval"><code>{{ states('sensor.foo')|float > 3 }}</code></div>
+                  </div>`,
     trigger: html`Alert when the trigger triggers if any condition specified is also true. Can be:
+                  <div class="extable">
+                       <div>A YAML <a href="https://www.home-assistant.io/docs/automation/trigger/">trigger</a> spec written using YAML flow notation.</div><div class="exval"><pre>[{'platform':'state','entity_id':'sensor.zz'}]\n[{'trigger': 'mqtt', 'topic': 'living_room/switch/ac', 'payload': "on"}]</pre></div>
+                  </div>`,
+    trigger_on: html`Alert starts firing when trigger triggers if any condition specified is also true. Can be:
+                  <div class="extable">
+                       <div>A YAML <a href="https://www.home-assistant.io/docs/automation/trigger/">trigger</a> spec written using YAML flow notation.</div><div class="exval"><pre>[{'platform':'state','entity_id':'sensor.zz'}]\n[{'trigger': 'mqtt', 'topic': 'living_room/switch/ac', 'payload': "on"}]</pre></div>
+                  </div>`,
+    trigger_off: html`Alert stops firing when trigger triggers if any condition specified is also true. Can be:
                   <div class="extable">
                        <div>A YAML <a href="https://www.home-assistant.io/docs/automation/trigger/">trigger</a> spec written using YAML flow notation.</div><div class="exval"><pre>[{'platform':'state','entity_id':'sensor.zz'}]\n[{'trigger': 'mqtt', 'topic': 'living_room/switch/ac', 'payload': "on"}]</pre></div>
                   </div>`,
@@ -3305,6 +3323,10 @@ let helpCommon = {
                        <div>Single pair</div><div class="exval"><code>{ domain: test, name: foo }</code></div>
                        <div>List of pairs</div><div class="exval"><code>[{ domain: test, name: foo },{ domain: test, name: foo2 }]</code></div>
                        <div>Pair or list with quotes</div><div class="exval"><code>{domain: 'test', name: 'foo'}</code></div>
+                  </div>`,
+    actions_on: html`Automation action to perform each time a condition alert starts firing. Can be:
+                    <div class="extable">
+                       <div>A YAML <a href="https://www.home-assistant.io/docs/automation/action/">automation action</a> spec written using YAML flow notation.</div><div class="exval"><pre>{ actions: [ action: system_log.write, data: { level: info, message: some message } ] }</pre></div>
                   </div>`,
     //: html`. Can be:
     //              <div class="extable">
@@ -3699,7 +3721,7 @@ class Alert2Create extends LitElement {
                      'done_message', 'reminder_message', 'ack_reminder_message', 'supersede_debounce_secs', 'display_msg', 'delay_on_secs',
                      'priority','icon'].includes(fname)) {
                     val = yamlEscape(rawVal);
-                } else if (['trigger', 'trigger_on', 'trigger_off', 'data', 'throttle_fires_per_mins',
+                } else if (['actions_on', 'trigger', 'trigger_on', 'trigger_off', 'data', 'throttle_fires_per_mins',
                             'reminder_frequency_mins', 'exception_ignore_regexes',
                             ].includes(fname)) {
                     val = rawVal;
@@ -3711,7 +3733,7 @@ class Alert2Create extends LitElement {
                         val = rawVal;
                     }
                 }
-                if (['trigger', 'trigger_on', 'trigger_off', 'data'].includes(fname)) {
+                if (['actions_on', 'trigger', 'trigger_on', 'trigger_off', 'data'].includes(fname)) {
                     val = val.replaceAll('\n', '\n        ');
                     yaml += `${fname}:\n        ${val}`;
                 } else {
@@ -3952,6 +3974,10 @@ class Alert2Create extends LitElement {
                  @expand-click=${this.expandClick} @change=${this._change} .defaultP=${this._topConfigs.raw.defaults}
                   .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
                <div slot="help">${helpCommon.supersede_debounce_secs}</div></alert2-cfg-field>
+            <alert2-cfg-field .hass=${this.hass} name="actions_on" type=${FieldTypes.TEMPLATE}
+                 @expand-click=${this.expandClick} @change=${this._change}
+                  .savedP=${{}} .currP=${this.alertCfg} .genResult=${this._generatorResult} >
+               <div slot="help">${helpCommon.actions_on}</div></alert2-cfg-field>
 
 
           </div>

@@ -231,6 +231,9 @@
              if (opts.supersedes) {
                  obj.attributes.supersedes = opts.supersedes;
              }
+             if (opts.actions_on_script_running) {
+                 obj.attributes.actions_on_script_running = opts.actions_on_script_running;
+             }
              return obj;
          }
          async function createExperiment(z, stateList, nodeList, nBelow=0) {
@@ -919,6 +922,16 @@
              await z.setField('condition_off', '{{"yes"}}');
              await z.checkRender('condition_off', /result:true/);
              await z.setField('condition_off', 'off');
+
+             // actions_on
+             await z.setField('actions_on', '');
+             await z.checkField('actions_on', null);
+             await z.setField('actions_on', 'on');
+             await z.checkRender('actions_on', /expected a mapping/, hasErr=true);
+             await z.setField('actions_on', "{ actions: [ { action: alert2.ack_all } ] }");
+             await z.checkRender('actions_on', /{"actions":\[{"action":"alert2.ack_all"}\]/);
+             await z.setField('actions_on', '');
+             await z.checkField('actions_on', null);
 
              // trigger
              await z.setField('trigger', '');
@@ -1615,6 +1628,7 @@
              z.checkDefault('condition', null);
              z.checkDefault('condition_on', null);
              z.checkDefault('condition_off', null);
+             z.checkDefault('actions_on', null);
              z.checkDefault('trigger', null);
              z.checkDefault('trigger_on', null);
              z.checkDefault('trigger_off', null);
@@ -2336,9 +2350,11 @@
          async function doTestMoreInfo() {
              let z = await initTest('more-info-alert2');
              let elem = z.ao;
-             elem.stateObj = createState('nn', 5000, 10000, null);
+             elem.stateObj = createState('nn', 5000, 10000, null, { actions_on_script_running: true });
              await sleepMs(500); // wait for history rpc
              jassert(z.ao.shadowRoot.querySelector('div.alist div').textContent.trim().startsWith('No state updates found since'));
+             //console.log(z.ao.shadowRoot.querySelector('div#actionsOnStatus').textContent.trim());
+             jassert(z.ao.shadowRoot.querySelector('div#actionsOnStatus').textContent.trim().match('actions_on script running:\\s+true'));
              z.ao.remove();
          }
 
