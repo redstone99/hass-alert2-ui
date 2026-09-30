@@ -1186,7 +1186,7 @@
              await z.setField('supersedes', 'null');
              await z.checkRender('supersedes', /result:null/);
              await z.setField('supersedes', '{{ { "domain": "d", "name": genElem } }}');
-             await z.checkRender('supersedes', /expected a dictionary/, hasErr=true);
+             await z.checkRender('supersedes', /expected a mapping/, hasErr=true);
 
              //    and if generator is specified, that triggers a reeval
              await z.setField('generator', 'ff');
