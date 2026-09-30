@@ -8,7 +8,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.21  (internal 144)';
+const VERSION = 'v1.22  (internal 155)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
@@ -1678,6 +1678,8 @@ class MoreInfoAlert2 extends LitElement {
         
         _requestInProgress: {state: true},
         _ackInProgress: {state: true},
+        _actionOnCancelInProgress: {state: true},
+        _actionOnRunInProgress: {state: true},
         _currSnoozeValue: {state: true},
         _currSelectorValue: {state: true},
         _historyArr: {state: true},
@@ -1685,16 +1687,17 @@ class MoreInfoAlert2 extends LitElement {
     }
     // I don't think anything sets hass on MoreInfoAlert2 and so this code will never run after init
     shouldUpdate(changedProps) {
-        //console.log('MoreInfoAlert2  shouldUpdate: ', changedProps.size);
-        if (changedProps.has('stateObj') && this._currSelectorValue === undefined) {
-            const stateObj = changedProps.get('stateObj');
-            if (stateObj) {
-                let nc = stateObj.attributes.notification_control;
+        if (this._currSelectorValue === undefined) {
+            if (this.stateObj) {
+                let nc = this.stateObj.attributes.notification_control;
                 this._currSelectorValue = nc;
                 if (nc && nc !== NOTIFICATIONS_DISABLED && nc !== NOTIFICATIONS_ENABLED) {
                     this._currSelectorValue = NOTIFICATIONS_SNOOZED;
                 }
             }
+        }
+        if (this.hass && !haformLoadStarted) {
+            loadHaForm(this._hass).then( ()=>{ } );
         }
         if (changedProps.size > 1) { return true; }
         if (changedProps.has('hass')) {
@@ -1720,6 +1723,8 @@ class MoreInfoAlert2 extends LitElement {
         this._historyEndDate = null;
         this._fetchPrevInProgress = false;
         this._fetchCurrInProgress = false;
+        this._actionOnCancelInProgress = false;
+        this._actionOnRunInProgress = false;
         this._snooze_includes_ack = true;
         // no shadowRoot yet.
     }
@@ -1758,6 +1763,36 @@ class MoreInfoAlert2 extends LitElement {
         this._historyEndDate = null;
         this._fetchCurrInProgress = true;
         this.getHistory();
+    }
+    async actionOnCancel(ev) {
+        await this.actionOnControl(ev, false);
+    }
+    async actionOnRun(ev) {
+        await this.actionOnControl(ev, true);
+    }
+    async actionOnControl(ev, isRun) {
+        const entId = this.stateObj.entity_id;
+        const abutton = ev.target;
+        const outerThis = this;
+        const setInProgress = function(nval) {
+            if (isRun) { outerThis._actionOnRunInProgress = nval; }  else { outerThis._actionOnCancelInProgress = nval; } };
+        setInProgress(true);
+        try {
+            await this.hass.callWS({
+                type: "call_service",
+                domain: 'alert2',
+                service: 'action_control',
+                target: { entity_id: entId },
+                service_data: { 'operation': (isRun ? 'run' : 'cancel') },
+            });
+        } catch (err) {
+            setInProgress(false);
+            abutton.actionError();
+            showToast(this, "error: " + err.message);
+            return;
+        }
+        setInProgress(false);
+        abutton.actionSuccess();
     }
     getHistory() {
         let stateObj = this.stateObj;
@@ -1833,6 +1868,25 @@ class MoreInfoAlert2 extends LitElement {
             notification_status = "snoozed until " + formatLogDate(idate);
         }
 
+        let actionOnStatus = stateObj.attributes.actions_on_script_running;
+        const hasActionOn = actionOnStatus !== undefined;
+        const actionGroup = hasActionOn ? html`
+            <div style="display: flex; margin-top: 2em; margin-bottom: 1em; align-items: center;">
+               <div class="title"><code>actions_on</code> script running: </div>
+               <div style="margin-left: 0.8em; margin-right:1em;">${actionOnStatus}</div>
+               <ha-progress-button
+                 .appearance=${"plain"}
+                 .progress=${this._actionOnCancelInProgress}
+                 @click=${this.actionOnCancel}
+               >Cancel</ha-progress-button>
+               <ha-progress-button
+                 .appearance=${"plain"}
+                 .progress=${this._actionOnRunInProgress}
+                 @click=${this.actionOnRun}
+               >Run</ha-progress-button>
+               </div>` : html``;
+
+        
         let is_snoozed = this._currSelectorValue == NOTIFICATIONS_SNOOZED;
         const entName = stateObj.entity_id;
         const isAlert = 'last_on_time' in stateObj.attributes;
@@ -2041,6 +2095,7 @@ class MoreInfoAlert2 extends LitElement {
               </ha-formfield>
             </div>
 `;
+
         
         // This is written so that it will stay live and update notification control status,
         // but will not change the notification control settings themselves,
@@ -2080,6 +2135,7 @@ class MoreInfoAlert2 extends LitElement {
                   .progress=${this._requestInProgress}
                   @click=${this._jupdate}>Update</ha-progress-button>
             <br/><br/>
+            ${actionGroup}
             <ha-attributes
                 .hass=${this.hass}
                 .stateObj=${stateObj}
@@ -3961,14 +4017,24 @@ window.customCards.push({
   name: "Alert2 Manager",
   preview: false, // Optional - defaults to false
   description: "Adjust Alert2 defaults and create and edit alerts",
-  documentationURL:
-    "https://github.com/redstone99/hass-alert2-ui",
+  documentationURL: "https://github.com/redstone99/hass-alert2-ui",
+  getEntitySuggestion: (hass, entityId) => {
+      if (entityId.split(".")[0] !== "alert2") {
+          return null;
+      }
+      return { config: { type: "custom:alert2-manager" } };
+  },
 });
 window.customCards.push({
   type: "alert2-overview",
   name: "Alert2 Overview",
   preview: false, // Optional - defaults to false
   description: "View recently active Alert2 alerts",
-  documentationURL:
-    "https://github.com/redstone99/hass-alert2-ui",
+  documentationURL: "https://github.com/redstone99/hass-alert2-ui",
+  getEntitySuggestion: (hass, entityId) => {
+      if (entityId.split(".")[0] !== "alert2") {
+          return null;
+      }
+      return { config: { type: "custom:alert2-overview" } };
+  },
 });

@@ -200,6 +200,8 @@ Snoozing an alert implicitly acks it once and prevents notifications during the 
 
 Times are displayed in the browser local time zone.
 
+Lastly, if the alert config specifies an [automation action](https://github.com/redstone99/hass-alert2#automation-actions), you will see a line reporting the run status of the automation along with buttons to cancel or initiate a run.
+
 ### Other ways to view alerts
 
 You may also add alert2 entities to entities cards and other cards that support entities.  If you click on an alert shown in such a situation, you'll see a popup (called a "more-info dialog") similar to the one shown above.  However, since Alert2 isn't integrated into the core HomeAssistant, that dialog will include some extra default sections like "history", but will also include the sections described above.
