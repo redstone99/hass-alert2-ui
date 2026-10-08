@@ -1,5 +1,31 @@
 <!-- ~/tmp/general-env/bin/grip -b ~/tmp/hass-alert2-ui/README.md 6420 -->
 
+
+# ---   MOVED --- Alert2 UI is now part of Alert2.
+
+The Alert2 frontend now automatically loads as part of alert2 startup in HA. As such, a separate Alert2 UI repository is no longer necessary.  This respository will stick around for a while during a transition period.  It will no longer be updated with frontend improvements.
+
+## Remove Alert2 UI to avoid javascript conflicts with Alert2
+
+Undo whichever installation/setup steps you followed below when you installed Alert2 UI. That means:
+
+1. Remove `alert2.js`:
+    * If you installed Alert2 UI via HACS: go into HACS and remove the Alert2 UI repository from your HA installation.
+    * If you installed Alert2 UI manually: remove `alert2.js` from the `www/` directory you installed it in.
+1. Unregister Alert2 UI from HA.
+    * If you added an alert2.js line to your lovelace YAML config, remove it.  E.g.:
+        <pre>lovelace:
+          mode: yaml
+          resources:
+            <b>- <s>url: /hacsfiles/hass-alert2-ui/alert2.js</s></b>
+              <b><s>type: module</s></b>
+            ...</pre>
+    * if you installed Alert2 UI manually (not via HACS) and configure dashboards via the UI, then click on Settings -> Dashboards -> Resources. "Resources" may appear only in the triple vertical dots on the upper right of the dashboards page. Remove the alert2.js resource.
+
+# --- Archival ---
+
+****
+
 [![GitHub Release](https://img.shields.io/github/v/release/redstone99/hass-alert2-ui)](https://github.com/redstone99/hass-alert2-ui/releases)
 [![GitHub Release Date](https://img.shields.io/github/release-date/redstone99/hass-alert2-ui)](https://github.com/redstone99/hass-alert2-ui/releases)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/redstone99/hass-alert2-ui)](https://github.com/redstone99/hass-alert2-ui/commits/master/)
