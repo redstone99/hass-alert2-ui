@@ -8,13 +8,14 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.22  (internal 158)';
+const VERSION = 'v1.22  (internal 158.1)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
 const useHaInput = window.frontendVersion >= '20260415';
 const useRadioGroup = window.frontendVersion >= '20260527'; // HA 2026.6
 
+const oldAlert2Alert = html`<ha-alert alert-type=${"warning"}>Alert2 UI has been integrated into Alert2.  Uninstall Alert2 UI, upgrade Alert2, and reload.  <a href="">Instructions + explanation</a></ha-alert>`;
 
 // From
 //   https://github.com/nielsfaber/scheduler-card/blob/main/src/lib/load_ha_form.js
@@ -712,6 +713,7 @@ class Alert2Overview extends LitElement {
         let foo = html`<ha-card>
             <h1 class="card-header"><div class="name" @click=${this._toggleShowVersion}>${title}</div>${versionHtml}</h1>
             ${cfgErrHtml}
+            ${oldAlert2Alert}
             <div class="card-content">
               <div style="display:flex; align-items: center; margin-bottom: 1em;">
                   <ha-slider .min=${0} .max=${this._sliderValArr.length-1} .step=${1} .value=${this._sliderVal} snaps ignore-bar-touch
@@ -2633,6 +2635,7 @@ class Alert2Manager extends LitElement {
               html`<ha-textfield type="text" .value=${this._searchTxt} autofocus @input=${this._change} ></ha-textfield>`;
         return html`<ha-card>
             <h1 class="card-header"><div class="name">Alert2 Manager</div></h1>
+            ${oldAlert2Alert}
             <div class="card-content">
               <div style="display:flex; align-items: center; margin-bottom: 0.3em;">
                   <!-- this should really just be ha-button -->
