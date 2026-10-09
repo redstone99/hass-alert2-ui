@@ -15,7 +15,7 @@ console.log(`alert2 ${VERSION}`);
 const useHaInput = window.frontendVersion >= '20260415';
 const useRadioGroup = window.frontendVersion >= '20260527'; // HA 2026.6
 
-const oldAlert2Alert = html`<ha-alert alert-type=${"warning"}>Alert2 UI has been integrated into Alert2.  Uninstall Alert2 UI, upgrade Alert2, and reload.  <a href="">Instructions + explanation</a></ha-alert>`;
+const oldAlert2Alert = html`<ha-alert alert-type=${"warning"}>Alert2 UI has been integrated into Alert2.  Uninstall Alert2 UI. <a href="https://github.com/redstone99/hass-alert2-ui/blob/main/README.md">Further instructions</a></ha-alert>`;
 
 // From
 //   https://github.com/nielsfaber/scheduler-card/blob/main/src/lib/load_ha_form.js
