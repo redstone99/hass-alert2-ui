@@ -25,6 +25,7 @@ Undo whichever installation/setup steps you followed below when you installed Al
               <b><s>type: module</s></b>
             ...</pre>
     * if you installed Alert2 UI manually (not via HACS) and configure dashboards via the UI, then click on Settings -> Dashboards -> Resources. "Resources" may appear only in the triple vertical dots on the upper right of the dashboards page. Remove the alert2.js resource.
+1. Reload the dashboard.  The warning message about uninstalling Alert UI should disappear from you Alert2 Overview and Alert2 Manager cards.  You can also click on the "Alerts" header of the Alert2 Overview card to view the frontend version.
 <br><br>
 <br><br>
 
