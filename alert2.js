@@ -8,7 +8,7 @@ const NOTIFICATIONS_ENABLED  = 'enabled'
 const NOTIFICATIONS_DISABLED = 'disabled'
 const NOTIFICATIONS_SNOOZED = 'snooze'
 const EVENT_ALERT_NEVER_FIRED_STATE = 'has never fired'
-const VERSION = 'v1.22  (internal 158.1)';
+const VERSION = 'v1.22.1  (internal 158.1)';
 console.log(`alert2 ${VERSION}`);
 
 // TODDO - maybe in 2028, remove this legacy support.
